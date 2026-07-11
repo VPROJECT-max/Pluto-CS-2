@@ -36,6 +36,7 @@ private:
     void RenderBomb();
     void RenderRadar();
     void RenderNotice();
+    void RenderDefusingNotification();
     void RenderWatermark();
     void RenderSpeedChart();
     void RenderDebugWindow();

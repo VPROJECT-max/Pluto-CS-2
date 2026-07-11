@@ -28,6 +28,7 @@ namespace cfg {
 			inline bool flashed = false;
 			inline bool scoped = false;
 			inline bool has_c4 = false;
+			inline bool distance = false;
 		}
 
 		namespace colors {
@@ -107,6 +108,8 @@ namespace cfg {
 		inline bool streamproof = false;
 		inline bool vsync = false;
 		inline bool free_cpu = true;
+		inline bool force_third_person = false;
+		inline bool defusal_notification = true;
 	}
 
 

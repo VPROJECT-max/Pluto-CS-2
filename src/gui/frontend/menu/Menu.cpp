@@ -237,7 +237,6 @@ void Menu::RenderImpl() {
 						ImGui::Checkbox("Money", &cfg::esp::flags::money);
 						ImGui::Checkbox("Weapon", &cfg::esp::flags::weapon);
 						ImGui::Checkbox("Ammo", &cfg::esp::flags::ammo);
-						ImGui::Checkbox("Ping", &cfg::esp::flags::ping);
 					}
 					ImGui::EndGroup();
 				}
@@ -269,6 +268,7 @@ void Menu::RenderImpl() {
 
 					ImGui::Checkbox("Crosshair", &cfg::world::crosshair::enabled);
 					ImGui::Checkbox("Velocity Graph", &cfg::world::velocity::enabled);
+					ImGui::Checkbox("Ping", &cfg::esp::flags::ping);
 				#ifdef _DEBUG // Part of the velocity graph for developers
 					if (cfg::world::velocity::enabled) {
 						ImGui::SliderInt("Sample rate", &cfg::world::velocity::sample_rate, 1, 100);

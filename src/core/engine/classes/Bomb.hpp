@@ -16,6 +16,8 @@ public:
     uintptr_t carrier;
     float time_left = 0.f;
     bool is_planted = false;
+    bool is_being_defused = false;
+    float defuse_time_left = 0.f;
     BombSite site = BombSite::Unknown;
 private:
     uintptr_t address;

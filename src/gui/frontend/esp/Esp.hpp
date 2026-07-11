@@ -21,6 +21,7 @@ private:
 
     // Temporary storage for ease
     view_matrix_t matrix;
+    Player local;
 private:
     Esp() {};
 

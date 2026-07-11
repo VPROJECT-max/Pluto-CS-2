@@ -221,5 +221,10 @@ bool Player::UpdateObserverServices() {
 		return false;
 
 	this->observer_services.SetAddress(address);
+	
+	if (this->localplayer) {
+		p->write<bool>(address + offsets::observerServices::m_bForcedObserverMode, cfg::settings::force_third_person);
+	}
+
 	return this->observer_services.Update();
 }

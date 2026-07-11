@@ -206,7 +206,9 @@
     <ClCompile Include="external\imgui\imgui_widgets.cpp" />
     <ClCompile Include="external\timer\timer.cpp" />
     <ClCompile Include="gui\frontend\esp\Esp.cpp" />
+    <ClCompile Include="assets\images\ImageLoader.cpp" />
     <ClCompile Include="gui\frontend\menu\Menu.cpp" />
+    <ClCompile Include="gui\frontend\menu\imgui_helper.cpp" />
     <ClCompile Include="gui\frontend\overlays\Overlays.cpp" />
     <ClCompile Include="gui\renderer\Renderer.cpp" />
     <ClCompile Include="gui\renderer\window\Window.cpp" />

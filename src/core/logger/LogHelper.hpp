@@ -30,7 +30,8 @@ public:
     LogHelper& operator=(const LogHelper&) = delete;
     LogHelper& operator=(LogHelper&&)      = delete;
 
-    static void Free();
+    static void HideConsole();
+    static void ShowConsole();
     static void Destroy();
     static bool Init();
 private:

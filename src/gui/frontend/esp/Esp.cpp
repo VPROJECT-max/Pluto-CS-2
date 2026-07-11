@@ -58,6 +58,7 @@ void Esp::RenderImpl() {
 	this->d = ImGui::GetBackgroundDrawList();
 
 	this->matrix = game.view_matrix;
+	this->local = local;
 
 	for (auto& player : players) {
 		if (!player.alive)
@@ -281,6 +282,17 @@ void Esp::RenderPlayerFalgs(Player player, std::pair<Vec2_t, Vec2_t> bounds, boo
 			bounds.first - Vec2_t((bounds.first.x - bounds.second.x) - 10, offset),
 			IM_COL32(255, 255, 255, 255),
 			std::format("{}ms", player.ping).c_str()
+		);
+
+		offset -= offset_mult;
+	}
+
+	if (cfg::esp::flags::distance) {
+		int distance = (int)(this->local.pos.dist_to_3d(player.pos) * 0.0254f);
+		d->AddText(
+			bounds.first - Vec2_t((bounds.first.x - bounds.second.x) - 10, offset),
+			IM_COL32(255, 255, 255, 255),
+			std::format("{}m", distance).c_str()
 		);
 
 		offset -= offset_mult;

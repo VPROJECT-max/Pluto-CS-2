@@ -56,6 +56,7 @@ bool Config::ReadImpl() {
 		cfg::esp::flags::defusing = data["esp"]["flags"].value("defusing", false);
 		cfg::esp::flags::flashed = data["esp"]["flags"].value("flashed", false);
 		cfg::esp::flags::has_c4 = data["esp"]["flags"].value("has_c4", false);
+		cfg::esp::flags::distance = data["esp"]["flags"].value("distance", false);
 
 		// colors
 		const auto& col = data["esp"]["colors"];
@@ -124,6 +125,8 @@ bool Config::ReadImpl() {
 		cfg::settings::streamproof = data["utils"].value("streamproof", false);
 		cfg::settings::vsync = data["utils"].value("vsync", true);
 		cfg::settings::free_cpu = data["utils"].value("free_cpu", true);
+		cfg::settings::force_third_person = data["utils"].value("force_third_person", false);
+		cfg::settings::defusal_notification = data["utils"].value("defusal_notification", true);
 		//cfg::settings::open_menu_key = data["utils"].value("open_menu_key", 0);
 	}
 	catch (const std::exception& e) {
@@ -165,6 +168,7 @@ bool Config::WriteImpl() {
 	data["esp"]["flags"]["flashed"] = cfg::esp::flags::flashed;
 	data["esp"]["flags"]["defusing"] = cfg::esp::flags::defusing;
 	data["esp"]["flags"]["has_c4"] = cfg::esp::flags::has_c4;
+	data["esp"]["flags"]["distance"] = cfg::esp::flags::distance;
 
 	// world
 	// spectator list
@@ -233,6 +237,8 @@ bool Config::WriteImpl() {
 	data["utils"]["streamproof"] = cfg::settings::streamproof;
 	data["utils"]["vsync"] = cfg::settings::vsync;
 	data["utils"]["free_cpu"] = cfg::settings::free_cpu;
+	data["utils"]["force_third_person"] = cfg::settings::force_third_person;
+	data["utils"]["defusal_notification"] = cfg::settings::defusal_notification;
 	//data["utils"]["open_menu_key"] = cfg::settings::open_menu_key;
 
 	f << std::setw(4) << data << std::endl;

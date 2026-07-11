@@ -51,6 +51,8 @@ namespace offsets
 		constexpr std::ptrdiff_t m_isPlanted = 0x8; // unk
 		constexpr std::ptrdiff_t m_bC4Activated = 0x11E8; // bool
 		constexpr std::ptrdiff_t m_nBombSite = 0x11A4; // int32
+		constexpr std::ptrdiff_t m_bBeingDefused = 0x11DC; // bool
+		constexpr std::ptrdiff_t m_flDefuseCountDown = 0x11F0; // GameTime_t
 
 		constexpr std::ptrdiff_t m_vecAbsOrigin = 0xC8; // VectorWS - CGameSceneNode 
 	}
@@ -62,6 +64,7 @@ namespace offsets
 	namespace observerServices {
 		constexpr std::ptrdiff_t m_iObserverMode = 0x48;
 		constexpr std::ptrdiff_t m_hObserverTarget = 0x4C;
+		constexpr std::ptrdiff_t m_bForcedObserverMode = 0x54; // bool
 	}
 
 	namespace global {

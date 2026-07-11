@@ -50,7 +50,6 @@ public:
 	static ID3D11RenderTargetView* render_targetview;
 
 	inline static RECT bounds;
-	inline static bool renderMenu = false;
 	inline static bool shouldRun = true;
 
 };

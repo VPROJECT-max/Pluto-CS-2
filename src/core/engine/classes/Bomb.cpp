@@ -41,6 +41,9 @@ bool Bomb::Update() {
 
 	this->time_left = 41 - (std::time(nullptr) - plant_time);
 
+	this->is_being_defused = p->read<bool>(this->address + offsets::bomb::m_bBeingDefused);
+	this->defuse_time_left = p->read<float>(this->address + offsets::bomb::m_flDefuseCountDown) - p->read<float>(client.base + offsets::globalVars + 0x2C /* current time usually? We can skip time left if only boolean is needed */); // Will just use is_being_defused
+
 	Bomb::prev_is_planted = true;
 	return true;
 }

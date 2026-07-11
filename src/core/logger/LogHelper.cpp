@@ -16,10 +16,15 @@ void LogHelper::Destroy()
     Logger::Destroy();
 }
 
-void LogHelper::Free() {
+void LogHelper::HideConsole() {
     if (HWND console = GetConsoleWindow()) {
-        FreeConsole();
-        PostMessage(console, WM_CLOSE, 0, 0);
+        ShowWindow(console, SW_HIDE);
+    }
+}
+
+void LogHelper::ShowConsole() {
+    if (HWND console = GetConsoleWindow()) {
+        ShowWindow(console, SW_SHOW);
     }
 }
 

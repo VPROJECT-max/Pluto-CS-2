@@ -355,16 +355,7 @@ LRESULT CALLBACK window_procedure(HWND window, UINT msg, WPARAM wParam, LPARAM l
 		if ((wParam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu (imgui uses it in their example :shrug:)
 			return 0;
 		break;
-	case WM_KEYUP:
-	{
-		bool toggle_key = wParam == VK_INSERT || wParam == VK_SHIFT && ((wParam >> 16) & 0xFF) == 0x36;
-
-		if (toggle_key) {
-			Window::renderMenu = !Window::renderMenu;
-			LOGF(VERBOSE, "Toggle key has been captured, toggling renderMenu state");
-		}
-		break;
-	}
+	/* WM_KEYUP removed — menu toggle is handled by Renderer::HandleState() polling */
 	case WM_DESTROY: // We dont handle this event
 		LOGF(VERBOSE, "Window procedure WM_DESTROY event triggered"); // We dont want to exit if a child window is closed, as they are when changing tabs
 		break;

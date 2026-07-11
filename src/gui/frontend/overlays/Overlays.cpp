@@ -4,6 +4,8 @@
 #include "gui/renderer/Renderer.hpp" // Circular dependency
 #include "gui/frontend/menu/Menu.hpp" // Circular dependency
 #include "assets/fonts/WeaponIcons.h"
+#include <Windows.h>
+#pragma comment(lib, "winmm.lib")
 
 bool Overlays::Init() {
     return GetInstance().InitImpl();
@@ -42,6 +44,7 @@ void Overlays::RenderImpl() {
         RenderWatermark();
 
         RenderNotice();
+        RenderDefusingNotification();
 
     #ifdef _DEBUG
         RenderDebugWindow();
@@ -72,17 +75,24 @@ void Overlays::RenderWatermark() {
 
     static int margin = 10;
     static int padding = 10;
-    std::string watermark_string = "cs2-external-esp";
+    std::string watermark_info = "";
 
-    watermark_string += std::format(" | {}fps", (int)io.Framerate);
+    watermark_info += std::format(" | {}fps", (int)io.Framerate);
 
     if (globals.in_match)
-        watermark_string += std::format(" | {}", globals.map_name);
+        watermark_info += std::format(" | {}", globals.map_name);
 
-    auto size = ImGui::CalcTextSize(watermark_string.data());
+    // Calculate total size
+    auto brand_tokyo = "Tokyo";
+    auto brand_z = "Z";
+    auto tokyo_size = ImGui::CalcTextSize(brand_tokyo);
+    auto z_size = ImGui::CalcTextSize(brand_z);
+    auto info_size = ImGui::CalcTextSize(watermark_info.data());
+    auto total_width = tokyo_size.x + z_size.x + info_size.x;
+    auto total_height = std::max(tokyo_size.y, std::max(z_size.y, info_size.y));
 
-    auto rect_start = ImVec2(io.DisplaySize.x - margin - padding * 2 - size.x, margin);
-    auto rect_end = ImVec2(io.DisplaySize.x - margin, margin + size.y + padding);
+    auto rect_start = ImVec2(io.DisplaySize.x - margin - padding * 2 - total_width, margin);
+    auto rect_end = ImVec2(io.DisplaySize.x - margin, margin + total_height + padding);
     auto pos = ImVec2(rect_start.x + padding, rect_start.y + padding * 0.6/* compensate font */);
 
     d->AddRectFilled(
@@ -99,10 +109,25 @@ void Overlays::RenderWatermark() {
         8.f
     );
 
+    // "Tokyo" in white
     d->AddText(
         pos,
         IM_COL32(255, 255, 255, 255),
-        watermark_string.data()
+        brand_tokyo
+    );
+
+    // "Z" in purple accent
+    d->AddText(
+        ImVec2(pos.x + tokyo_size.x, pos.y),
+        IM_COL32(123, 94, 167, 255), // #7B5EA7
+        brand_z
+    );
+
+    // Info in white
+    d->AddText(
+        ImVec2(pos.x + tokyo_size.x + z_size.x, pos.y),
+        IM_COL32(255, 255, 255, 255),
+        watermark_info.data()
     );
 }
 
@@ -692,4 +717,83 @@ void Overlays::RenderBomb() {
             d->AddLine(bar_start, bar_filled_end, bar_color, bar_height);
         }
     }
+}
+
+void Overlays::RenderDefusingNotification() {
+    if (!cfg::settings::defusal_notification)
+        return;
+
+    static float start_time = 0.0f;
+    static bool was_defusing = false;
+    
+    auto snapshot = Cache::CopySnapshot();
+    auto& bomb = snapshot.bomb;
+
+    // Detect state change from not-defusing to defusing
+    if (bomb.is_planted && bomb.is_being_defused && !was_defusing) {
+        start_time = ImGui::GetTime();
+        // Play notification sound with mciSendString to control volume
+        // Since mciSendString can handle mp3 and volume easily
+        mciSendStringA("close defuse_snd", nullptr, 0, nullptr);
+        mciSendStringA("open \"C:\\Users\\ddeni\\Downloads\\myinstants.mp3\" type mpegvideo alias defuse_snd", nullptr, 0, nullptr);
+        mciSendStringA("setaudio defuse_snd volume to 300", nullptr, 0, nullptr); // Lower volume (0-1000)
+        mciSendStringA("play defuse_snd", nullptr, 0, nullptr);
+    }
+    
+    was_defusing = bomb.is_being_defused;
+
+    float current_time = ImGui::GetTime();
+    float elapsed = current_time - start_time;
+    float duration = 3.0f; // 3 seconds duration
+    
+    if (elapsed > duration)
+        return;
+
+    auto& io = ImGui::GetIO();
+    auto d = ImGui::GetBackgroundDrawList();
+
+    // Animation calculation
+    float progress = elapsed / duration;
+    
+    // Fade out at the end, but also fade in at the start
+    float alpha = 1.0f;
+    if (progress < 0.1f) alpha = progress / 0.1f;
+    else if (progress > 0.8f) alpha = 1.0f - ((progress - 0.8f) / 0.2f);
+    
+    // Move up animation
+    float y_offset = 60.0f - (progress * 40.0f); // Starts at Y=60, moves up to Y=20
+
+    std::string text = "Bomb is being Defused!";
+    ImVec2 text_size = ImGui::CalcTextSize(text.c_str());
+    
+    float padding_x = 15.0f;
+    float padding_y = 10.0f;
+    
+    ImVec2 rect_start(io.DisplaySize.x * 0.5f - text_size.x * 0.5f - padding_x, y_offset);
+    ImVec2 rect_end(io.DisplaySize.x * 0.5f + text_size.x * 0.5f + padding_x, y_offset + text_size.y + padding_y * 2.0f);
+    
+    // Background
+    d->AddRectFilled(
+        rect_start, 
+        rect_end, 
+        IM_COL32(20, 20, 20, (int)(220 * alpha)), 
+        8.0f
+    );
+    
+    // Border
+    d->AddRect(
+        rect_start, 
+        rect_end, 
+        IM_COL32(200, 40, 40, (int)(255 * alpha)), 
+        8.0f,
+        0,
+        2.0f
+    );
+
+    // Text
+    d->AddText(
+        ImVec2(rect_start.x + padding_x, rect_start.y + padding_y),
+        IM_COL32(255, 255, 255, (int)(255 * alpha)),
+        text.c_str()
+    );
 }

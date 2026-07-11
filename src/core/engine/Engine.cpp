@@ -42,7 +42,7 @@ bool Engine::InitImpl() {
 
 #ifdef _DEBUG
     if (!cfg::dev::console)
-        LogHelper::Free();
+        LogHelper::HideConsole();
 #endif
 
     std::thread(&Engine::Thread, this).detach();
