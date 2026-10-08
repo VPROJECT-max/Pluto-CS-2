@@ -70,7 +70,8 @@ void LogSkipped(const std::string& reason) {
         arguments.original,
         arguments.rollback,
         local_app_data / "Pluto" / "Updates",
-        arguments.parent_process_id
+        arguments.parent_process_id,
+        arguments.parent_ready_event
     };
     std::string error;
     const int result = ApplyVerifiedUpdate(request, error);
@@ -90,7 +91,8 @@ void LogSkipped(const std::string& reason) {
         module_path,
         arguments.rollback,
         local_app_data / "Pluto" / "Updates",
-        arguments.parent_process_id
+        arguments.parent_process_id,
+        arguments.parent_ready_event
     };
     std::string error;
     if (!CleanupUpdate(request, error)) {

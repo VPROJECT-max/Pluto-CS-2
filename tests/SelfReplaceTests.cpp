@@ -25,7 +25,7 @@ std::string ReadText(const std::filesystem::path& path) {
 updater::ReplaceOperations TestOperations(const bool launch_succeeds) {
     updater::ReplaceOperations operations;
     operations.wait_for_matching_process = [](
-        std::uint32_t, const std::filesystem::path&, std::string&) { return true; };
+        std::uint32_t, const std::filesystem::path&, std::wstring_view, std::string&) { return true; };
     operations.move_replace = [](const auto& source, const auto& destination, std::string& error) {
         std::error_code code;
         std::filesystem::remove(destination, code);
@@ -74,11 +74,13 @@ int main() {
         L"C:\\Local\\Pluto\\Updates\\2.5.1\\Pluto-portable.exe",
         L"--apply-update", L"--original", L"C:\\Tools\\Pluto-portable.exe",
         L"--rollback", L"C:\\Tools\\Pluto-portable.exe.rollback",
-        L"--parent-pid", L"42"
+        L"--parent-pid", L"42",
+        L"--parent-ready-event", L"Local\\PlutoUpdate-test-42"
     };
     const auto parsed_apply = updater::ParseStartupArguments(apply);
     assert(parsed_apply.mode == StartupMode::apply_update);
     assert(parsed_apply.parent_process_id == 42);
+    assert(parsed_apply.parent_ready_event == L"Local\\PlutoUpdate-test-42");
 
     const auto root = std::filesystem::temp_directory_path() / "pluto-self-replace-tests";
     std::filesystem::remove_all(root);
@@ -94,13 +96,14 @@ int main() {
 
     updater::ApplyRequest valid{
         paths->staged_executable, paths->original_executable, paths->rollback_executable,
-        local / "Pluto" / "Updates", 42
+        local / "Pluto" / "Updates", 42, L"Local\\PlutoUpdate-test-42"
     };
     assert(updater::ValidateApplyRequest(valid, error));
 
     auto mismatched_parent = TestOperations(true);
     mismatched_parent.wait_for_matching_process = [](
-        std::uint32_t, const std::filesystem::path&, std::string& operation_error) {
+        std::uint32_t, const std::filesystem::path&, std::wstring_view,
+        std::string& operation_error) {
         operation_error = "parent executable mismatch";
         return false;
     };

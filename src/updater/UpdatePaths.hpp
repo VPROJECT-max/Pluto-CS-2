@@ -26,6 +26,7 @@ struct StartupArguments {
     std::filesystem::path staging;
     std::filesystem::path rollback;
     std::uint32_t parent_process_id{};
+    std::wstring parent_ready_event;
 };
 
 struct UpdatePaths {

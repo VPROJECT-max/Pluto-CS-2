@@ -4,6 +4,8 @@
 
 #include <Windows.h>
 
+#include <atomic>
+#include <cwctype>
 #include <system_error>
 
 namespace updater {
@@ -21,16 +23,34 @@ namespace {
     return _wcsicmp(normalized_left.c_str(), normalized_right.c_str()) == 0;
 }
 
+[[nodiscard]] bool IsSafeReadyEventName(const std::wstring_view name) {
+    constexpr std::wstring_view prefix{ L"Local\\PlutoUpdate-" };
+    if (!name.starts_with(prefix) || name.size() <= prefix.size() || name.size() > 128) {
+        return false;
+    }
+    for (const wchar_t character : name.substr(prefix.size())) {
+        if (!std::iswalnum(character) && character != L'-') {
+            return false;
+        }
+    }
+    return true;
+}
+
 [[nodiscard]] bool ValidateCommon(
     const std::filesystem::path& staging,
     const std::filesystem::path& original,
     const std::filesystem::path& rollback,
     const std::filesystem::path& updates_root,
     const std::uint32_t parent_process_id,
+    const std::wstring_view parent_ready_event,
     std::string& error) {
     error.clear();
     if (parent_process_id == 0) {
         error = "Update parent process id is invalid";
+        return false;
+    }
+    if (!IsSafeReadyEventName(parent_ready_event)) {
+        error = "Update parent-ready event is invalid";
         return false;
     }
     if (staging.filename().native() != portable_filename
@@ -81,9 +101,16 @@ namespace {
 [[nodiscard]] bool WaitForMatchingProcess(
     const std::uint32_t process_id,
     const std::filesystem::path& expected_executable,
+    const std::wstring_view ready_event_name,
     std::string& error) {
+    HANDLE ready_event = OpenEventW(EVENT_MODIFY_STATE, FALSE, std::wstring{ ready_event_name }.c_str());
+    if (ready_event == nullptr) {
+        error = "Unable to open the Pluto parent-ready event";
+        return false;
+    }
     HANDLE process = OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, process_id);
     if (process == nullptr) {
+        CloseHandle(ready_event);
         error = "Unable to open the previous Pluto process";
         return false;
     }
@@ -92,15 +119,25 @@ namespace {
     DWORD image_path_length = static_cast<DWORD>(image_path.size());
     if (!QueryFullProcessImageNameW(process, 0, image_path.data(), &image_path_length)) {
         CloseHandle(process);
+        CloseHandle(ready_event);
         error = "Unable to identify the previous Pluto process";
         return false;
     }
     image_path.resize(image_path_length);
     if (!EqualNormalizedPath(image_path, expected_executable)) {
         CloseHandle(process);
+        CloseHandle(ready_event);
         error = "Previous process executable does not match the requested Pluto target";
         return false;
     }
+
+    if (!SetEvent(ready_event)) {
+        CloseHandle(process);
+        CloseHandle(ready_event);
+        error = "Unable to acknowledge the verified Pluto parent process";
+        return false;
+    }
+    CloseHandle(ready_event);
 
     const DWORD wait = WaitForSingleObject(process, 60'000);
     CloseHandle(process);
@@ -142,11 +179,24 @@ namespace {
     const std::filesystem::path& executable,
     const std::span<const std::wstring> arguments,
     std::string& error) {
+    static std::atomic_uint64_t sequence{};
+    const std::wstring ready_event_name = L"Local\\PlutoUpdate-"
+        + std::to_wstring(GetCurrentProcessId()) + L"-"
+        + std::to_wstring(GetTickCount64()) + L"-"
+        + std::to_wstring(++sequence);
+    HANDLE ready_event = CreateEventW(nullptr, TRUE, FALSE, ready_event_name.c_str());
+    if (ready_event == nullptr) {
+        error = "Unable to create the Pluto parent-ready event";
+        return false;
+    }
+
     std::wstring command = QuoteCommandArgument(executable.native());
     for (const auto& argument : arguments) {
         command.push_back(L' ');
         command += QuoteCommandArgument(argument);
     }
+    command += L" --parent-ready-event ";
+    command += QuoteCommandArgument(ready_event_name);
 
     STARTUPINFOW startup{};
     startup.cb = sizeof(startup);
@@ -156,9 +206,22 @@ namespace {
         executable.parent_path().c_str(), &startup, &process)) {
         error = "Unable to launch the updated Pluto executable (Win32 "
             + std::to_string(GetLastError()) + ")";
+        CloseHandle(ready_event);
         return false;
     }
     CloseHandle(process.hThread);
+
+    const DWORD ready = WaitForSingleObject(ready_event, 10'000);
+    CloseHandle(ready_event);
+    if (ready != WAIT_OBJECT_0) {
+        TerminateProcess(process.hProcess, 1);
+        WaitForSingleObject(process.hProcess, 5'000);
+        CloseHandle(process.hProcess);
+        error = ready == WAIT_TIMEOUT
+            ? "Timed out waiting for the Pluto updater handshake"
+            : "Unable to wait for the Pluto updater handshake";
+        return false;
+    }
     CloseHandle(process.hProcess);
     return true;
 }
@@ -184,6 +247,7 @@ bool ValidateApplyRequest(const ApplyRequest& request, std::string& error) {
         request.rollback_executable,
         request.updates_root,
         request.parent_process_id,
+        request.parent_ready_event,
         error);
 }
 
@@ -194,6 +258,7 @@ bool ValidateCleanupRequest(const CleanupRequest& request, std::string& error) {
         request.rollback_executable,
         request.updates_root,
         request.parent_process_id,
+        request.parent_ready_event,
         error);
 }
 
@@ -216,7 +281,7 @@ int ApplyVerifiedUpdate(
         return 3;
     }
     if (!operations.wait_for_matching_process(
-        request.parent_process_id, request.original_executable, error)) {
+        request.parent_process_id, request.original_executable, request.parent_ready_event, error)) {
         return 4;
     }
     if (!operations.move_replace(request.original_executable, request.rollback_executable, error)) {
@@ -249,7 +314,7 @@ bool CleanupUpdate(const CleanupRequest& request, std::string& error) {
         return false;
     }
     if (!WaitForMatchingProcess(
-        request.parent_process_id, request.staged_executable, error)) {
+        request.parent_process_id, request.staged_executable, request.parent_ready_event, error)) {
         return false;
     }
 

@@ -93,28 +93,32 @@ StartupArguments ParseStartupArguments(const std::span<const std::wstring_view> 
         parsed.mode = StartupMode::skip_update;
         return parsed;
     }
-    if (arguments.size() == 8
+    if (arguments.size() == 10
         && arguments[1] == L"--apply-update"
         && arguments[2] == L"--original"
         && arguments[4] == L"--rollback"
         && arguments[6] == L"--parent-pid"
+        && arguments[8] == L"--parent-ready-event"
         && ParseProcessId(arguments[7], parsed.parent_process_id)) {
         parsed.mode = StartupMode::apply_update;
         parsed.staging = parsed.executable;
         parsed.original = arguments[3];
         parsed.rollback = arguments[5];
+        parsed.parent_ready_event = arguments[9];
         return parsed;
     }
-    if (arguments.size() == 8
+    if (arguments.size() == 10
         && arguments[1] == L"--cleanup-update"
         && arguments[2] == L"--staging"
         && arguments[4] == L"--rollback"
         && arguments[6] == L"--parent-pid"
+        && arguments[8] == L"--parent-ready-event"
         && ParseProcessId(arguments[7], parsed.parent_process_id)) {
         parsed.mode = StartupMode::cleanup_update;
         parsed.original = parsed.executable;
         parsed.staging = arguments[3];
         parsed.rollback = arguments[5];
+        parsed.parent_ready_event = arguments[9];
         return parsed;
     }
     parsed.mode = StartupMode::invalid;
