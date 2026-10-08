@@ -105,6 +105,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
       <AdditionalDependencies>Crypt32.lib;Psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
@@ -128,6 +129,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
       <AdditionalDependencies>Crypt32.lib;Psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
@@ -148,6 +150,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
       <AdditionalDependencies>Crypt32.lib;Psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
@@ -171,6 +174,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
       <AdditionalDependencies>Crypt32.lib;Psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
@@ -215,6 +219,7 @@
     <ClCompile Include="external\timer\timer.cpp" />
     <ClCompile Include="gui\frontend\esp\DrawPrimitives.cpp" />
     <ClCompile Include="gui\frontend\esp\Esp.cpp" />
+    <ClCompile Include="gui\frontend\brand\PlutoBrand.cpp" />
     <ClCompile Include="assets\images\ImageLoader.cpp" />
     <ClCompile Include="..\starline-imgui-menu-GOOD FOR CS 2\external_esp_menu.cpp" />
     <ClCompile Include="..\starline-imgui-menu-GOOD FOR CS 2\imgui_text_renderer.cpp" />
@@ -245,6 +250,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="assets\fonts\Icons.h" />
+    <ClInclude Include="assets\fonts\PlutoWordmarkFont.hpp" />
+    <ClInclude Include="assets\images\PlutoLogoImage.hpp" />
+    <ClInclude Include="gui\frontend\brand\PlutoBrand.hpp" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="assets\fonts\WeaponIcons.h" />
     <ClInclude Include="..\starline-imgui-menu-GOOD FOR CS 2\external_esp_menu.h" />
     <ClInclude Include="..\starline-imgui-menu-GOOD FOR CS 2\imgui_text_renderer.h" />
@@ -364,6 +373,9 @@
     <ClInclude Include="updater\http\HttpHelper.hpp" />
     <ClInclude Include="updater\Updater.hpp" />
     <ClInclude Include="core\engine\classes\Weapon.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Pluto.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,4 +1,5 @@
 #include "Window.hpp"
+#include "resource.h"
 
 ID3D11Device* Window::device = nullptr;
 ID3D11DeviceContext* Window::device_context = nullptr;
@@ -10,7 +11,63 @@ HWND Window::hwnd = nullptr;
 HWND Window::viewport = nullptr;
 WNDCLASSEX Window::wc = { };
 
+ID3D11Texture2D* Window::chams_texture = nullptr;
+ID3D11RenderTargetView* Window::chams_rtv = nullptr;
+ID3D11ShaderResourceView* Window::chams_srv = nullptr;
+UINT Window::chams_width = 0;
+UINT Window::chams_height = 0;
+
 extern LRESULT CALLBACK window_procedure(HWND window, UINT msg, WPARAM wParam, LPARAM lParam);
+
+bool Window::CreateChamsRenderTarget(UINT width, UINT height) {
+	if (!device || width == 0 || height == 0)
+		return false;
+
+	if (chams_texture && chams_rtv && chams_srv && chams_width == width && chams_height == height)
+		return true;
+
+	DestroyChamsRenderTarget();
+
+	D3D11_TEXTURE2D_DESC desc = {};
+	desc.Width = width;
+	desc.Height = height;
+	desc.MipLevels = 1;
+	desc.ArraySize = 1;
+	desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	desc.SampleDesc.Count = 1;
+	desc.Usage = D3D11_USAGE_DEFAULT;
+	desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+
+	if (FAILED(device->CreateTexture2D(&desc, nullptr, &chams_texture))) {
+		LOGF(WARNING, "Failed to create chams texture");
+		return false;
+	}
+
+	if (FAILED(device->CreateRenderTargetView(chams_texture, nullptr, &chams_rtv))) {
+		LOGF(WARNING, "Failed to create chams RTV");
+		DestroyChamsRenderTarget();
+		return false;
+	}
+
+	if (FAILED(device->CreateShaderResourceView(chams_texture, nullptr, &chams_srv))) {
+		LOGF(WARNING, "Failed to create chams SRV");
+		DestroyChamsRenderTarget();
+		return false;
+	}
+
+	chams_width = width;
+	chams_height = height;
+
+	return true;
+}
+
+void Window::DestroyChamsRenderTarget() {
+	if (chams_srv) { chams_srv->Release(); chams_srv = nullptr; }
+	if (chams_rtv) { chams_rtv->Release(); chams_rtv = nullptr; }
+	if (chams_texture) { chams_texture->Release(); chams_texture = nullptr; }
+	chams_width = 0;
+	chams_height = 0;
+}
 
 bool Window::CreateDevice()
 {
@@ -94,6 +151,8 @@ void Window::DestroyDevice()
 {
 	if (device)
 	{
+		DestroyChamsRenderTarget();
+
 		device->Release();
 		device_context->Release();
 		swap_chain->Release();
@@ -114,8 +173,12 @@ bool Window::SpawnWindow()
 	//wc.style = CS_CLASSDC;
 	wc.style = 0;
 	wc.hInstance = GetModuleHandle(0);
-	wc.lpszClassName = "wa";
+	wc.lpszClassName = "PlutoOverlayWindow";
 	wc.lpfnWndProc = window_procedure;
+	wc.hIcon = static_cast<HICON>(LoadImage(
+		wc.hInstance, MAKEINTRESOURCE(IDI_PLUTO_ICON), IMAGE_ICON, 32, 32, LR_DEFAULTCOLOR));
+	wc.hIconSm = static_cast<HICON>(LoadImage(
+		wc.hInstance, MAKEINTRESOURCE(IDI_PLUTO_ICON), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR));
 	//wc.cbClsExtra = 0;
 	//wc.cbWndExtra = 0;
 
@@ -133,8 +196,8 @@ bool Window::SpawnWindow()
 
 	hwnd = CreateWindowEx(
 		WS_EX_TOPMOST | WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOOLWINDOW,
-		"wa",
-		"wa",
+		"PlutoOverlayWindow",
+		"Pluto",
 		WS_POPUP | WS_VISIBLE,
 		0, 0, width, height,
 		NULL,
@@ -368,6 +431,7 @@ LRESULT CALLBACK window_procedure(HWND window, UINT msg, WPARAM wParam, LPARAM l
 		//DEBUG_LOG(out, "Window procedure WM_SIZE event triggered");
 		if (Window::device != nullptr && wParam != SIZE_MINIMIZED)
 		{
+			Window::DestroyChamsRenderTarget();
 			if (Window::render_targetview != nullptr) {
 				Window::render_targetview->Release();
 				Window::render_targetview = nullptr;

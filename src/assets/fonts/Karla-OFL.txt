@@ -1,0 +1,4 @@
+Karla-Regular.ttf by Jonathan Pinhorn
+Licensed under the SIL Open Font License, Version 1.1.
+Source copy: Dear ImGui misc/fonts/Karla-Regular.ttf
+License reference: https://openfontlicense.org/open-font-license-official-text/

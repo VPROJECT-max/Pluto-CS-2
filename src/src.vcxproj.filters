@@ -102,6 +102,9 @@
     <ClCompile Include="gui\frontend\esp\Esp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="gui\frontend\brand\PlutoBrand.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="gui\frontend\esp\DrawPrimitives.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -449,8 +452,25 @@
     <ClInclude Include="assets\fonts\Icons.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="assets\fonts\PlutoWordmarkFont.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="assets\images\PlutoLogoImage.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\frontend\brand\PlutoBrand.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="assets\fonts\WeaponIcons.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Pluto.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

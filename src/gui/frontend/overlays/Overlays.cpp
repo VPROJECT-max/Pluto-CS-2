@@ -68,7 +68,7 @@ void Overlays::RenderWatermark() {
         return;
 
     const SystemTelemetrySnapshot live = telemetry.Sample();
-    Starline::GUI::RenderTokyoZKWatermark(
+    Starline::GUI::RenderPlutoWatermark(
         ImGui::GetIO().Framerate,
         live.cpu_percent,
         live.working_set_mib);

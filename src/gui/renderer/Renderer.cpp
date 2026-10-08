@@ -3,8 +3,11 @@
 
 #include "core/engine/Engine.hpp"
 #include "gui/frontend/esp/Esp.hpp"
+#include "gui/frontend/brand/PlutoBrand.hpp"
 #include "gui/frontend/menu/Menu.hpp"
 #include "gui/frontend/overlays/Overlays.hpp"
+#include "gui/frontend/preview/EspPreview.hpp"
+#include "../../../starline-imgui-menu-GOOD FOR CS 2/local_account_loader.h"
 
 bool Renderer::Init() {
     return GetInstance().InitImpl();
@@ -39,11 +42,12 @@ bool Renderer::InitImpl() {
     }
 
     Menu::Init();
+    Starline::LocalAccountLoader::Initialize();
     Esp::Init();
     Overlays::Init();
 
-    // Focus the game
-    SetForegroundWindow(Engine::GetProcess()->hwnd_);
+    Window::SetClickthrough(Window::hwnd, false);
+    SetForegroundWindow(Window::hwnd);
 
     if (cfg::settings::streamproof)
         Window::SetAffinity(Window::hwnd, WindowAffinity::Invisible);
@@ -77,6 +81,8 @@ void Renderer::ThreadImpl() {
     }
 
     // Once exited, destroy everything
+    EspPreview::Shutdown();
+    PlutoBrand::Shutdown();
     Window::DestroyImGui();
     Window::DestroyDevice();
     Window::DespawnWindow();
@@ -84,6 +90,17 @@ void Renderer::ThreadImpl() {
 
 void Renderer::Render() {
     Window::StartRender();
+
+    if (!isAuthenticated) {
+        if (Starline::LocalAccountLoader::Render()) {
+            isAuthenticated = true;
+            isOpen = true;
+            Window::SetClickthrough(Window::hwnd, false);
+            SetForegroundWindow(Window::hwnd);
+        }
+        Window::EndRender();
+        return;
+    }
 
     Esp::Render();
     Overlays::Render();
@@ -96,6 +113,12 @@ void Renderer::Render() {
 
 bool Renderer::HandleState() {
     isRunning = Window::shouldRun; // From the window event handler
+
+    if (!isAuthenticated) {
+        if ((GetAsyncKeyState(VK_END) & 0x8000) != 0)
+            isRunning = false;
+        return false;
+    }
 
     static bool was_holding = false;
 
