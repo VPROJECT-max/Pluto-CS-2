@@ -1,8 +1,48 @@
 #include "Esp.hpp"
 
 #include "gui/renderer/Renderer.hpp"
+#include "gui/renderer/window/Window.hpp"
 #include "assets/fonts/WeaponIcons.h"
 #include "assets/fonts/Icons.h"
+
+namespace {
+
+ImU32 FadeColor(const color_t& color, float alpha) {
+    return ImColor(color.r, color.g, color.b, color.a * std::clamp(alpha, 0.0f, 1.0f));
+}
+
+ImVec2 EdgeProjection(const view_matrix_t& matrix, const Player& source, const Player& player, ImVec2 display) {
+    const Vec3_t direction = player.pos - source.pos;
+    float x = matrix.matrix[0][0] * direction.x + matrix.matrix[0][1] * direction.y + matrix.matrix[0][2] * direction.z;
+    float y = matrix.matrix[1][0] * direction.x + matrix.matrix[1][1] * direction.y + matrix.matrix[1][2] * direction.z;
+    const float z = matrix.matrix[2][0] * direction.x + matrix.matrix[2][1] * direction.y + matrix.matrix[2][2] * direction.z;
+    if (z > 0.0f) {
+        x = -x;
+        y = -y;
+    }
+
+    const ImVec2 normalized = esp_draw::NormalizeDirection({ x, -y });
+    return {
+        display.x * 0.5f + normalized.x * display.x,
+        display.y * 0.5f + normalized.y * display.y,
+    };
+}
+
+} // namespace
+
+void SetChamsRenderTarget(const ImDrawList* parent_list, const ImDrawCmd* cmd) {
+	if (!Window::device_context || !Window::chams_rtv)
+		return;
+    float clear_color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+    Window::device_context->OMSetRenderTargets(1, &Window::chams_rtv, nullptr);
+    Window::device_context->ClearRenderTargetView(Window::chams_rtv, clear_color);
+}
+
+void RestoreRenderTarget(const ImDrawList* parent_list, const ImDrawCmd* cmd) {
+	if (!Window::device_context || !Window::render_targetview)
+		return;
+    Window::device_context->OMSetRenderTargets(1, &Window::render_targetview, nullptr);
+}
 
 bool Esp::Init() {
 	return GetInstance().InitImpl();
@@ -60,6 +100,32 @@ void Esp::RenderImpl() {
 	this->matrix = game.view_matrix;
 	this->local = local;
 
+	const bool chams_ready = cfg::esp::chams && Window::CreateChamsRenderTarget(
+		static_cast<UINT>(std::max(io.DisplaySize.x, 0.0f)),
+		static_cast<UINT>(std::max(io.DisplaySize.y, 0.0f))
+	);
+
+	if (chams_ready) {
+		d->AddCallback(SetChamsRenderTarget, nullptr);
+		
+		for (auto& player : players) {
+			if (!player.alive || player.localplayer) continue;
+			bool mate = player.team == local.team;
+			if (!cfg::esp::team && mate) continue;
+			if (cfg::esp::spotted && !player.spotted) continue;
+			if (local.observer_services.target == player.pawn_controller_addr && local.observer_services.mode == ObserverMode::First) continue;
+			const float distance_m = local.pos.dist_to_3d(player.pos) * 0.0254f;
+			if (cfg::esp::max_distance > 0.0f && distance_m > cfg::esp::max_distance) continue;
+			
+			RenderPlayerChams(player, mate);
+		}
+
+		d->AddCallback(RestoreRenderTarget, nullptr);
+		
+		float global_alpha = cfg::esp::colors::chams_enemy.a;
+		d->AddImage((ImTextureID)Window::chams_srv, ImVec2(0, 0), io.DisplaySize, ImVec2(0, 0), ImVec2(1, 1), ImColor(1.0f, 1.0f, 1.0f, global_alpha));
+	}
+
 	for (auto& player : players) {
 		if (!player.alive)
 			continue;
@@ -83,47 +149,87 @@ void Esp::RenderImpl() {
 		)
 			continue;
 
-		RenderPlayerTracers(local, player, mate);
-		RenderPlayer(player, mate);
+		PlayerLayout layout{};
+		if (!BuildPlayerLayout(player, mate, layout))
+			continue;
+
+		if (!layout.on_screen) {
+			if (cfg::esp::offscreen_indicators)
+				esp_draw::AddOffscreenIndicator(*d, io.DisplaySize, layout.projected, layout.distance_m,
+					FadeColor(mate ? cfg::esp::colors::box_team : cfg::esp::colors::box_enemy, layout.alpha), 26.0f);
+			continue;
+		}
+
+		RenderPlayerTracers(local, player, layout);
+		RenderPlayer(player, layout);
 	}
 
 	RenderCrosshair(local);
 	ImGui::PopFont();
 }
 
-void Esp::RenderPlayer(Player player, bool mate) {
-	// Needed for flags & item sizing, so even if the box is not enabled
-	// Should be calculated
+bool Esp::BuildPlayerLayout(Player player, bool mate, PlayerLayout& layout) {
+	layout.mate = mate;
+	layout.visible = cfg::esp::visible_check && player.spotted;
+	layout.distance_m = this->local.pos.dist_to_3d(player.pos) * 0.0254f;
+	if (cfg::esp::max_distance > 0.0f && layout.distance_m > cfg::esp::max_distance)
+		return false;
+
+	layout.alpha = esp_draw::DistanceAlpha(layout.distance_m, cfg::esp::fade_start, cfg::esp::fade_end);
+	if (layout.alpha <= 0.0f)
+		return false;
+
+	Vec2_t projected{};
+	layout.on_screen = matrix.wts(player.pos, io.DisplaySize, projected, true);
+	if (layout.on_screen)
+		layout.projected = projected;
+	else
+		layout.projected = EdgeProjection(matrix, this->local, player, io.DisplaySize);
+
 	std::pair<Vec2_t, Vec2_t> bounds;
-	if (!player.GetBounds(matrix, io.DisplaySize, bounds))
-		return;
+	if (!player.GetBounds(matrix, io.DisplaySize, bounds)) {
+		layout.on_screen = false;
+		return true;
+	}
+
+	layout.bounds = { bounds.first, bounds.second };
+	layout.on_screen = layout.bounds.Valid();
+	return true;
+}
+
+void Esp::RenderPlayer(Player player, const PlayerLayout& layout) {
 
 	// Causes hp bars across the screen when they respawn
 	if (!player.alive)
 		return;
 
 	if (cfg::esp::box) {
-		auto color = mate ? cfg::esp::colors::box_team : cfg::esp::colors::box_enemy;
-
-		d->AddRect(
-			bounds.first,
-			bounds.second,
-			ImColor(color)
-		);
+		const auto color = layout.mate ?
+			(layout.visible ? cfg::esp::colors::box_team_visible : cfg::esp::colors::box_team) :
+			(layout.visible ? cfg::esp::colors::box_enemy_visible : cfg::esp::colors::box_enemy);
+		if (cfg::esp::box_style == 1)
+			esp_draw::AddCornerBox(*d, layout.bounds, FadeColor(color, layout.alpha), cfg::esp::box_thickness, 0.25f, cfg::esp::outline);
+		else
+			esp_draw::AddBox(*d, layout.bounds, FadeColor(color, layout.alpha), cfg::esp::box_thickness, cfg::esp::outline);
 	}
 
 	if (cfg::esp::skeleton)
-		RenderPlayerBones(player, mate);
+		RenderPlayerBones(player, layout);
 
 	if (cfg::esp::head_tracker)
-		RenderPlayerTracker(player, bounds, mate);
+		RenderPlayerTracker(player, layout);
 
-	RenderPlayerBars(player, bounds);
-	RenderPlayerFalgs(player, bounds, mate);
+    if (cfg::esp::eye_ray)
+        RenderPlayerEyeRay(player, layout);
+
+	RenderPlayerBars(player, layout);
+	RenderPlayerFalgs(player, layout);
 }
 
-void Esp::RenderPlayerBones(Player player, bool mate) {
-	auto color = mate ? cfg::esp::colors::skeleton_team : cfg::esp::colors::skeleton_enemy;
+void Esp::RenderPlayerBones(Player player, const PlayerLayout& layout) {
+	auto color = layout.mate ?
+        (layout.visible ? cfg::esp::colors::skeleton_team_visible : cfg::esp::colors::skeleton_team) :
+        (layout.visible ? cfg::esp::colors::skeleton_enemy_visible : cfg::esp::colors::skeleton_enemy);
 
 	auto bone_count = player.bone_list.size();
 	for (const auto& bone : connections) {
@@ -143,16 +249,77 @@ void Esp::RenderPlayerBones(Player player, bool mate) {
 		if (!matrix.wts(bone2.pos, io.DisplaySize, scb2))
 			continue;
 
-		d->AddLine(
-			scb1,
-			scb2,
-			ImColor(color),
-			1.5f
-		);
+		if (cfg::esp::outline)
+			d->AddLine(scb1, scb2, IM_COL32(0, 0, 0, static_cast<int>(220.0f * layout.alpha)), cfg::esp::skeleton_thickness + 2.0f);
+		d->AddLine(scb1, scb2, FadeColor(color, layout.alpha), cfg::esp::skeleton_thickness);
 	}
 }
 
-void Esp::RenderPlayerTracker(Player player, std::pair<Vec2_t, Vec2_t> bounds, bool mate) {
+void Esp::RenderPlayerChams(Player player, bool mate) {
+    bool is_visible = cfg::esp::visible_check && player.spotted;
+    auto color = mate ? 
+        (is_visible ? cfg::esp::colors::chams_team_visible : cfg::esp::colors::chams_team) : 
+        (is_visible ? cfg::esp::colors::chams_enemy_visible : cfg::esp::colors::chams_enemy);
+    
+    // Force 100% opacity to prevent alpha accumulation (double-blending) at the joints
+    color.a = 1.0f;
+
+    auto bone_count = player.bone_list.size();
+
+    float distance = this->local.pos.dist_to(player.pos);
+    if (distance < 1.0f) distance = 1.0f;
+
+    // BaseThickness / Distance scaling
+    float base_thickness = 6500.0f; // Increased base thickness to make them bulkier
+    float thickness = base_thickness / distance;
+
+    // Clamp to prevent blobbing out or being invisible
+    if (thickness > 80.0f) thickness = 80.0f; // Increased max thickness
+    if (thickness < 1.0f) thickness = 1.0f;
+
+    // To create "fake chams", we'll draw thick lines/quads between bones to simulate volume
+    for (const auto& bone : connections) {
+        int first = bone[0], second = bone[1];
+
+        if (bone_count <= first || bone_count <= second)
+            continue;
+
+        const auto& bone1 = player.bone_list[first];
+        const auto& bone2 = player.bone_list[second];
+
+        Vec2_t scb1;
+        if (!matrix.wts(bone1.pos, io.DisplaySize, scb1))
+            continue;
+
+        Vec2_t scb2;
+        if (!matrix.wts(bone2.pos, io.DisplaySize, scb2))
+            continue;
+
+        // Draw a thick line with lower opacity to simulate a colored overlay over the body part
+        d->AddLine(
+            scb1,
+            scb2,
+            ImColor(color),
+            thickness // Distance scaled thickness
+        );
+
+        // Add rounded joints (capsules) to fix overlapping joints
+        d->AddCircleFilled(
+            scb1,
+            thickness / 2.0f,
+            ImColor(color),
+            12
+        );
+        d->AddCircleFilled(
+            scb2,
+            thickness / 2.0f,
+            ImColor(color),
+            12
+        );
+    }
+}
+
+void Esp::RenderPlayerTracker(Player player, const PlayerLayout& layout) {
 	if (player.bone_list.empty())
 		return;
 
@@ -162,80 +329,84 @@ void Esp::RenderPlayerTracker(Player player, std::pair<Vec2_t, Vec2_t> bounds, b
 	if (!matrix.wts(head_bone.pos, io.DisplaySize, head))
 		return;
 
-	auto width = bounds.second.x - bounds.first.x;
-	auto color = mate ? cfg::esp::colors::tracker_team : cfg::esp::colors::tracker_enemy;
+	auto width = layout.bounds.Width();
+	auto color = layout.mate ?
+        (layout.visible ? cfg::esp::colors::tracker_team_visible : cfg::esp::colors::tracker_team) :
+        (layout.visible ? cfg::esp::colors::tracker_enemy_visible : cfg::esp::colors::tracker_enemy);
 
-	d->AddCircle(
+	d->AddCircleFilled(
 		head,
 		width / 6,
-		ImColor(color),
+		FadeColor(color, layout.alpha),
 		15
 	);
 }
 
-void Esp::RenderPlayerBars(Player player, std::pair<Vec2_t, Vec2_t> bounds) {
+void Esp::RenderPlayerEyeRay(Player player, const PlayerLayout& layout) {
+    if (player.bone_list.empty())
+        return;
+
+    auto head_bone = player.bone_list[bone_index::head];
+
+    Vec2_t head;
+    if (!matrix.wts(head_bone.pos, io.DisplaySize, head))
+        return;
+
+    // Convert QAngle to forward vector
+    float pitch = player.eye_angles.x * (3.14159265358979323846f / 180.0f);
+    float yaw = player.eye_angles.y * (3.14159265358979323846f / 180.0f);
+    
+    Vec3_t forward;
+    forward.x = cos(yaw) * cos(pitch);
+    forward.y = sin(yaw) * cos(pitch);
+    forward.z = -sin(pitch); // Source engine pitch is inverted
+
+    // Ray length (adjust as needed)
+    float length = 50.0f;
+    Vec3_t ray_end_3d = head_bone.pos + (forward * length);
+
+    Vec2_t ray_end;
+    if (!matrix.wts(ray_end_3d, io.DisplaySize, ray_end))
+        return;
+
+    auto color = layout.mate ?
+        (layout.visible ? cfg::esp::colors::eye_ray_team_visible : cfg::esp::colors::eye_ray_team) :
+        (layout.visible ? cfg::esp::colors::eye_ray_enemy_visible : cfg::esp::colors::eye_ray_enemy);
+
+    d->AddLine(
+        head,
+        ray_end,
+        FadeColor(color, layout.alpha),
+        cfg::esp::skeleton_thickness
+    );
+}
+
+void Esp::RenderPlayerBars(Player player, const PlayerLayout& layout) {
 	if (cfg::esp::health) {
-		auto x_start = bounds.first.x - 4; // -4 is padding
-		auto x_end = x_start - 2; // -2 is the inner space of the rect
-
-		auto y_start = bounds.first.y;
-		auto y_end = bounds.second.y;
-
-		float height = y_end - y_start;
-		float filled_height = height * (player.health / 100.0f);
-
-		d->AddRectFilled(
-			ImVec2(x_start, y_end - filled_height),
-			ImVec2(x_end, y_end),
-			IM_COL32(100, 255, 100, 255)
-		);
-
-		d->AddRect(
-			ImVec2(x_start, y_start),
-			ImVec2(x_end, y_end),
-			IM_COL32(0, 0, 0, 50)
-		);
-
-		if (cfg::esp::health_number && player.health < 100) {
-			auto txt = std::to_string(player.health);
-			auto sz = ImGui::CalcTextSize(txt.c_str());
-
-			d->AddText(
-				Vec2_t(
-					(x_start + x_end) * 0.5f - sz.x * 0.5f,
-					y_end - filled_height - sz.y * 0.5f
-				),
-				IM_COL32(255, 255, 255, 255),
-				txt.c_str()
-			);
-		}
+		float health_frac = std::clamp(player.health / 100.0f, 0.0f, 1.0f);
+		const ImU32 health_color = IM_COL32(
+			static_cast<int>(255.0f - 155.0f * health_frac),
+			static_cast<int>(50.0f + 205.0f * health_frac),
+			50,
+			static_cast<int>(255.0f * layout.alpha));
+		esp_draw::AddBar(*d, layout.bounds, health_frac, health_color, esp_draw::BarSide::Left,
+			cfg::esp::bar_thickness, cfg::esp::health_number && player.health < 100);
 	}
 
 	if (cfg::esp::armor) {
-		auto y_start = bounds.second.y + 4; // 4 is padding
-		auto y_end = y_start + 2; // 2 is the inner space of the rect
-
-		auto x_start = bounds.first.x;
-		auto x_end = bounds.second.x;
-
-		float width = x_end - x_start;
-		float filled_width = width * (player.armor / 100.0f);
-
-		d->AddRectFilled(
-			ImVec2(x_start, y_start),
-			ImVec2(x_start + filled_width, y_end),
-			IM_COL32(150, 150, 255, 255)
-		);
-
-		d->AddRect(
-			ImVec2(x_start, y_start),
-			ImVec2(x_end, y_end),
-			IM_COL32(0, 0, 0, 50)
-		);
+		float armor_frac = std::clamp(player.armor / 100.0f, 0.0f, 1.0f);
+		esp_draw::AddBar(*d, layout.bounds, armor_frac,
+			IM_COL32(90, 170, 255, static_cast<int>(255.0f * layout.alpha)),
+			esp_draw::BarSide::Right, cfg::esp::bar_thickness, false);
 	}
 }
 
-void Esp::RenderPlayerFalgs(Player player, std::pair<Vec2_t, Vec2_t> bounds, bool mate) {
+void Esp::RenderPlayerFalgs(Player player, const PlayerLayout& layout) {
+	const auto bounds = std::pair<Vec2_t, Vec2_t>{
+		{ layout.bounds.min.x, layout.bounds.min.y },
+		{ layout.bounds.max.x, layout.bounds.max.y }
+	};
+	const bool mate = layout.mate;
 	if (cfg::esp::flags::name) {
 		auto sanitized_name = std::format("{}{}", player.name, (player.bot ? " (Bot)" : ""));
 		auto name_size = ImGui::CalcTextSize(sanitized_name.data());
@@ -368,12 +539,7 @@ void Esp::RenderPlayerFalgs(Player player, std::pair<Vec2_t, Vec2_t> bounds, boo
 		auto icon_size = ImGui::CalcTextSize(WeaponIcons::C4);
 		ImGui::PopFont();
 
-		// Flash the icon if they're holding the C4, presumably planting since nobody just holds it really
-		ImColor draw_color = ImColor(color);
-		if (player.weapon.item_index == weapon_c4) {
-			float alpha = 0.5f + 0.5f * sinf((float)ImGui::GetTime() * 8.0f);
-			draw_color = ImColor(color.r, color.g, color.b, alpha);
-		}
+		const ImColor draw_color(color.r, color.g, color.b, color.a * layout.alpha);
 
 		d->AddText(
 			this->font_merged_icons,
@@ -430,52 +596,19 @@ void Esp::RenderCrosshair(Player local)
 		thickness);
 }
 
-void Esp::RenderPlayerTracers(Player source, Player player, bool mate) {
+void Esp::RenderPlayerTracers(Player source, Player player, const PlayerLayout& layout) {
 	if (!cfg::esp::tracers)
 		return;
 
-	Vec2_t screenPos;
-	bool projected = matrix.wts(player.pos, io.DisplaySize, screenPos, false);
-
-	if (!projected)
-	{
-		Vec3_t camPos = source.pos;
-		Vec3_t dir = player.pos - camPos;
-
-		// projection for off screen players
-		Vec3_t viewDir;
-		viewDir.x = matrix[0][0] * dir.x + matrix[0][1] * dir.y + matrix[0][2] * dir.z;
-		viewDir.y = matrix[1][0] * dir.x + matrix[1][1] * dir.y + matrix[1][2] * dir.z;
-		viewDir.z = matrix[2][0] * dir.x + matrix[2][1] * dir.y + matrix[2][2] * dir.z;
-
-		if (viewDir.z > 0.0f)
-		{
-			viewDir.x = -viewDir.x;
-			viewDir.y = -viewDir.y;
-		}
-
-		// normalize
-		float len = sqrt(viewDir.x * viewDir.x + viewDir.y * viewDir.y);
-		if (len > 0.001f)
-		{
-			viewDir.x /= len;
-			viewDir.y /= len;
-		}
-
-		screenPos.x = io.DisplaySize.x * 0.5f + viewDir.x * io.DisplaySize.x * 0.5f;
-		screenPos.y = io.DisplaySize.y * 0.5f - viewDir.y * io.DisplaySize.y * 0.5f;
-
-		float margin = 10.f;
-		screenPos.x = std::clamp(screenPos.x, margin, io.DisplaySize.x - margin);
-		screenPos.y = std::clamp(screenPos.y, margin, io.DisplaySize.y - margin);
-	}
-
-	auto color = mate ? cfg::esp::colors::tracer_team : cfg::esp::colors::tracer_enemy;
+	const ImVec2 screen_pos = esp_draw::ClampPoint(layout.projected, io.DisplaySize, 10.0f);
+	auto color = layout.mate ?
+        (layout.visible ? cfg::esp::colors::tracer_team_visible : cfg::esp::colors::tracer_team) :
+        (layout.visible ? cfg::esp::colors::tracer_enemy_visible : cfg::esp::colors::tracer_enemy);
 
 	d->AddLine(
 		Vec2_t(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f),
-		screenPos,
-		ImColor(color),
+		screen_pos,
+		FadeColor(color, layout.alpha),
 		1.0f
 	);
 }

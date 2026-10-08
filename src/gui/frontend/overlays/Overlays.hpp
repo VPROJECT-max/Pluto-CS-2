@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/engine/cache/Cache.hpp"
+#include "SystemTelemetry.hpp"
 
 class Overlays {
 public:
@@ -21,6 +22,7 @@ private:
     size_t vel_index = 0;
     std::vector<int> vel_buffer;
     float vel_accumulator = 0.0f;
+    SystemTelemetry telemetry;
 private:
     Overlays() {};
 

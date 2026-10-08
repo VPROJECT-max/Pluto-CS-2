@@ -1,4 +1,85 @@
 #include "Config.hpp"
+#include "ConfigDocument.hpp"
+
+namespace {
+
+void ResetEspDefaults() {
+	cfg::esp::team = true;
+	cfg::esp::box = true;
+	cfg::esp::armor = true;
+	cfg::esp::health = true;
+	cfg::esp::skeleton = true;
+	cfg::esp::head_tracker = true;
+	cfg::esp::health_number = false;
+	cfg::esp::box_style = 0;
+	cfg::esp::box_thickness = 1.0f;
+	cfg::esp::outline = true;
+	cfg::esp::offscreen_indicators = true;
+	cfg::esp::fade_start = 45.0f;
+	cfg::esp::fade_end = 110.0f;
+	cfg::esp::max_distance = 140.0f;
+	cfg::esp::skeleton_thickness = 1.5f;
+	cfg::esp::text_scale = 1.0f;
+	cfg::esp::bar_thickness = 2.0f;
+	cfg::esp::spotted = false;
+	cfg::esp::tracers = false;
+	cfg::esp::chams = false;
+	cfg::esp::eye_ray = false;
+	cfg::esp::visible_check = false;
+
+	cfg::esp::flags::name = true;
+	cfg::esp::flags::ping = true;
+	cfg::esp::flags::weapon = false;
+	cfg::esp::flags::ammo = false;
+	cfg::esp::flags::reloading = false;
+	cfg::esp::flags::defusing = false;
+	cfg::esp::flags::money = false;
+	cfg::esp::flags::flashed = false;
+	cfg::esp::flags::scoped = false;
+	cfg::esp::flags::has_c4 = false;
+	cfg::esp::flags::distance = false;
+
+	cfg::esp::colors::box_team = { 0.f, 1.f, 0.29f, 0.5f };
+	cfg::esp::colors::box_enemy = { 1.f, 0.f, 0.f, 0.5f };
+	cfg::esp::colors::box_team_visible = { 0.f, 1.f, 0.29f, 0.8f };
+	cfg::esp::colors::box_enemy_visible = { 1.f, 0.5f, 0.f, 0.8f };
+	cfg::esp::colors::skeleton_team = { 0.f, 1.f, 0.f, 0.5f };
+	cfg::esp::colors::skeleton_enemy = { 1.f, 0.f, 0.f, 0.5f };
+	cfg::esp::colors::skeleton_team_visible = { 0.f, 1.f, 0.f, 0.8f };
+	cfg::esp::colors::skeleton_enemy_visible = { 1.f, 0.5f, 0.f, 0.8f };
+}
+
+void ResetWorldDefaults() {
+	cfg::world::spectators::enabled = false;
+	cfg::world::spectators::detailed = false;
+	cfg::world::spectators::self_only = true;
+	cfg::world::spectators::pos = { 10.f, 100.f };
+	cfg::world::bomb::location = true;
+	cfg::world::bomb::timer = true;
+	cfg::world::bomb::pos = { 10.f, 300.f };
+	cfg::world::crosshair::enabled = false;
+	cfg::world::radar::enabled = true;
+	cfg::world::radar::no_rotate = false;
+	cfg::world::radar::range = 2000.f;
+	cfg::world::radar::pos = { 10.f, 10.f };
+	cfg::world::radar::size = { 200.f, 200.f };
+	cfg::world::velocity::enabled = false;
+	cfg::world::velocity::sample_rate = 35;
+	cfg::world::velocity::sample_length = 5.f;
+	cfg::world::velocity::pos = { 10.f, 400.f };
+	cfg::world::velocity::size = { 400.f, 100.f };
+}
+
+void ResetSettingsDefaults() {
+	cfg::settings::watermark = true;
+	cfg::settings::streamproof = false;
+	cfg::settings::vsync = false;
+	cfg::settings::free_cpu = true;
+	cfg::settings::force_third_person = false;
+	cfg::settings::defusal_notification = true;
+}
+
+} // namespace
 
 bool Config::Read() {
 	return GetInstance().ReadImpl();
@@ -8,22 +89,43 @@ bool Config::Write() {
 	return GetInstance().WriteImpl();
 }
 
+const std::string& Config::LastStatus() {
+	return GetInstance().last_status;
+}
+
+bool Config::ResetEsp() {
+	ResetEspDefaults();
+	return Write();
+}
+
+bool Config::ResetWorld() {
+	ResetWorldDefaults();
+	return Write();
+}
+
+bool Config::ResetSettings() {
+	ResetSettingsDefaults();
+	return Write();
+}
+
+bool Config::ResetAll() {
+	cfg::enabled = true;
+	ResetEspDefaults();
+	ResetWorldDefaults();
+	ResetSettingsDefaults();
+	return Write();
+}
+
 bool Config::ReadImpl() {
-	std::ifstream f("config.json");
-
-	if (!f.good()) {
-		LOGF(FATAL, "Configuration file does not exist, creating a new one");
-		WriteImpl();
-		return false;
-	}
-
 	json data;
-	try {
-		data = json::parse(f);
+	std::string error;
+	if (!std::filesystem::exists("config.json")) {
+		last_status = "Configuration not found; defaults kept";
+		return WriteImpl();
 	}
-	catch (const std::exception& e) {
-		LOGF(FATAL, "Failed to parse configuration file");
-		WriteImpl();
+	if (!config_document::Read("config.json", data, error)) {
+		last_status = error;
+		LOGF(WARNING, "{}", error);
 		return false;
 	}
 
@@ -43,7 +145,20 @@ bool Config::ReadImpl() {
 		cfg::esp::skeleton = data["esp"].value("skeleton", true);
 		cfg::esp::head_tracker = data["esp"].value("head_tracker", true);
 		cfg::esp::health_number = data["esp"].value("health_number", false);
+		cfg::esp::box_style = data["esp"].value("box_style", 0);
+		cfg::esp::box_thickness = data["esp"].value("box_thickness", 1.0f);
+		cfg::esp::outline = data["esp"].value("outline", true);
+		cfg::esp::offscreen_indicators = data["esp"].value("offscreen_indicators", true);
+		cfg::esp::fade_start = data["esp"].value("fade_start", 45.0f);
+		cfg::esp::fade_end = data["esp"].value("fade_end", 110.0f);
+		cfg::esp::max_distance = data["esp"].value("max_distance", 140.0f);
+		cfg::esp::skeleton_thickness = data["esp"].value("skeleton_thickness", 1.5f);
+		cfg::esp::text_scale = data["esp"].value("text_scale", 1.0f);
+		cfg::esp::bar_thickness = data["esp"].value("bar_thickness", 2.0f);
 		cfg::esp::tracers = data["esp"].value("tracers", false);
+		cfg::esp::chams = data["esp"].value("chams", false);
+		cfg::esp::eye_ray = data["esp"].value("eye_ray", false);
+		cfg::esp::visible_check = data["esp"].value("visible_check", false);
 
 		// flags
 		cfg::esp::flags::name = data["esp"]["flags"].value("name", true);
@@ -62,15 +177,33 @@ bool Config::ReadImpl() {
 		const auto& col = data["esp"]["colors"];
 		cfg::esp::colors::box_team = JsonToColor(col, "box_team", { 0.f, 1.f, 0.29f, 0.5f });
 		cfg::esp::colors::box_enemy = JsonToColor(col, "box_enemy", { 1.f, 0.f, 0.f, 0.5f });
+		cfg::esp::colors::box_team_visible = JsonToColor(col, "box_team_visible", { 0.f, 1.f, 0.29f, 0.8f });
+		cfg::esp::colors::box_enemy_visible = JsonToColor(col, "box_enemy_visible", { 1.f, 0.5f, 0.f, 0.8f });
 
 		cfg::esp::colors::skeleton_team = JsonToColor(col, "skeleton_team", { 0.f, 1.f, 0.f, 0.5f });
 		cfg::esp::colors::skeleton_enemy = JsonToColor(col, "skeleton_enemy", { 1.f, 0.f, 0.f, 0.5f });
+		cfg::esp::colors::skeleton_team_visible = JsonToColor(col, "skeleton_team_visible", { 0.f, 1.f, 0.f, 0.8f });
+		cfg::esp::colors::skeleton_enemy_visible = JsonToColor(col, "skeleton_enemy_visible", { 1.f, 0.5f, 0.f, 0.8f });
 
 		cfg::esp::colors::tracker_team = JsonToColor(col, "tracker_team", { 1.f, 1.f, 1.f, 0.3f });
 		cfg::esp::colors::tracker_enemy = JsonToColor(col, "tracker_enemy", { 1.f, 1.f, 1.f, 0.3f });
+		cfg::esp::colors::tracker_team_visible = JsonToColor(col, "tracker_team_visible", { 1.f, 1.f, 1.f, 0.8f });
+		cfg::esp::colors::tracker_enemy_visible = JsonToColor(col, "tracker_enemy_visible", { 1.f, 0.5f, 0.f, 0.8f });
 
 		cfg::esp::colors::tracer_team = JsonToColor(col, "tracer_team", { 0.f, 1.f, 0.f, 0.5f });
 		cfg::esp::colors::tracer_enemy = JsonToColor(col, "tracer_enemy", { 1.f, 0.f, 0.f, 0.5f });
+		cfg::esp::colors::tracer_team_visible = JsonToColor(col, "tracer_team_visible", { 0.f, 1.f, 0.f, 0.8f });
+		cfg::esp::colors::tracer_enemy_visible = JsonToColor(col, "tracer_enemy_visible", { 1.f, 0.5f, 0.f, 0.8f });
+
+		cfg::esp::colors::chams_team = JsonToColor(col, "chams_team", { 0.f, 1.f, 0.f, 0.2f });
+		cfg::esp::colors::chams_enemy = JsonToColor(col, "chams_enemy", { 1.f, 0.f, 0.f, 0.2f });
+		cfg::esp::colors::chams_team_visible = JsonToColor(col, "chams_team_visible", { 0.f, 1.f, 0.f, 0.5f });
+		cfg::esp::colors::chams_enemy_visible = JsonToColor(col, "chams_enemy_visible", { 1.f, 0.5f, 0.f, 0.5f });
+
+		cfg::esp::colors::eye_ray_team = JsonToColor(col, "eye_ray_team", { 0.f, 1.f, 1.f, 0.5f });
+		cfg::esp::colors::eye_ray_enemy = JsonToColor(col, "eye_ray_enemy", { 1.f, 1.f, 0.f, 0.5f });
+		cfg::esp::colors::eye_ray_team_visible = JsonToColor(col, "eye_ray_team_visible", { 0.f, 1.f, 1.f, 0.8f });
+		cfg::esp::colors::eye_ray_enemy_visible = JsonToColor(col, "eye_ray_enemy_visible", { 1.f, 1.f, 0.f, 0.8f });
 
 		// flag colors
 		const auto& fcol = data["esp"]["colors"]["flags"];
@@ -130,47 +263,90 @@ bool Config::ReadImpl() {
 		//cfg::settings::open_menu_key = data["utils"].value("open_menu_key", 0);
 	}
 	catch (const std::exception& e) {
-		LOGF(FATAL, "Failed to parse configuration");
-		WriteImpl();
+		last_status = std::string("Failed to apply configuration: ") + e.what();
+		LOGF(WARNING, "{}", last_status);
 		return false;
 	}
 
+	last_status = "Configuration loaded";
 	LOGF(INFO, "Successfully parsed configuration");
 	return true;
 }
 
 bool Config::WriteImpl() {
-	std::ofstream f("config.json");
-
-	json data;
+	json data = json::object();
+	std::string error;
+	if (std::filesystem::exists("config.json") && !config_document::Read("config.json", data, error)) {
+		last_status = "Save blocked to preserve invalid config: " + error;
+		return false;
+	}
 
 	data["enabled"] = cfg::enabled;
-
-	// esp
 	data["esp"]["box"] = cfg::esp::box;
 	data["esp"]["team"] = cfg::esp::team;
 	data["esp"]["armor"] = cfg::esp::armor;
 	data["esp"]["health"] = cfg::esp::health;
-	data["esp"]["health_number"] = cfg::esp::health_number;
+	data["esp"]["spotted"] = cfg::esp::spotted;
 	data["esp"]["skeleton"] = cfg::esp::skeleton;
 	data["esp"]["head_tracker"] = cfg::esp::head_tracker;
-	data["esp"]["spotted"] = cfg::esp::spotted;
+	data["esp"]["health_number"] = cfg::esp::health_number;
+	data["esp"]["box_style"] = cfg::esp::box_style;
+	data["esp"]["box_thickness"] = cfg::esp::box_thickness;
+	data["esp"]["outline"] = cfg::esp::outline;
+	data["esp"]["offscreen_indicators"] = cfg::esp::offscreen_indicators;
+	data["esp"]["fade_start"] = cfg::esp::fade_start;
+	data["esp"]["fade_end"] = cfg::esp::fade_end;
+	data["esp"]["max_distance"] = cfg::esp::max_distance;
+	data["esp"]["skeleton_thickness"] = cfg::esp::skeleton_thickness;
+	data["esp"]["text_scale"] = cfg::esp::text_scale;
+    data["esp"]["bar_thickness"] = cfg::esp::bar_thickness;
 	data["esp"]["tracers"] = cfg::esp::tracers;
+	data["esp"]["chams"] = cfg::esp::chams;
+	data["esp"]["eye_ray"] = cfg::esp::eye_ray;
+	data["esp"]["visible_check"] = cfg::esp::visible_check;
 
-	// flags
 	data["esp"]["flags"]["name"] = cfg::esp::flags::name;
 	data["esp"]["flags"]["ping"] = cfg::esp::flags::ping;
 	data["esp"]["flags"]["money"] = cfg::esp::flags::money;
-	data["esp"]["flags"]["scoped"] = cfg::esp::flags::scoped;
 	data["esp"]["flags"]["weapon"] = cfg::esp::flags::weapon;
 	data["esp"]["flags"]["ammo"] = cfg::esp::flags::ammo;
 	data["esp"]["flags"]["reloading"] = cfg::esp::flags::reloading;
-	data["esp"]["flags"]["flashed"] = cfg::esp::flags::flashed;
+	data["esp"]["flags"]["scoped"] = cfg::esp::flags::scoped;
 	data["esp"]["flags"]["defusing"] = cfg::esp::flags::defusing;
+	data["esp"]["flags"]["flashed"] = cfg::esp::flags::flashed;
 	data["esp"]["flags"]["has_c4"] = cfg::esp::flags::has_c4;
 	data["esp"]["flags"]["distance"] = cfg::esp::flags::distance;
 
-	// world
+	ColorToJson(data["esp"]["colors"], "box_team", cfg::esp::colors::box_team);
+	ColorToJson(data["esp"]["colors"], "box_enemy", cfg::esp::colors::box_enemy);
+	ColorToJson(data["esp"]["colors"], "box_team_visible", cfg::esp::colors::box_team_visible);
+	ColorToJson(data["esp"]["colors"], "box_enemy_visible", cfg::esp::colors::box_enemy_visible);
+
+	ColorToJson(data["esp"]["colors"], "skeleton_team", cfg::esp::colors::skeleton_team);
+	ColorToJson(data["esp"]["colors"], "skeleton_enemy", cfg::esp::colors::skeleton_enemy);
+	ColorToJson(data["esp"]["colors"], "skeleton_team_visible", cfg::esp::colors::skeleton_team_visible);
+	ColorToJson(data["esp"]["colors"], "skeleton_enemy_visible", cfg::esp::colors::skeleton_enemy_visible);
+
+	ColorToJson(data["esp"]["colors"], "tracker_team", cfg::esp::colors::tracker_team);
+	ColorToJson(data["esp"]["colors"], "tracker_enemy", cfg::esp::colors::tracker_enemy);
+	ColorToJson(data["esp"]["colors"], "tracker_team_visible", cfg::esp::colors::tracker_team_visible);
+	ColorToJson(data["esp"]["colors"], "tracker_enemy_visible", cfg::esp::colors::tracker_enemy_visible);
+
+	ColorToJson(data["esp"]["colors"], "tracer_team", cfg::esp::colors::tracer_team);
+	ColorToJson(data["esp"]["colors"], "tracer_enemy", cfg::esp::colors::tracer_enemy);
+	ColorToJson(data["esp"]["colors"], "tracer_team_visible", cfg::esp::colors::tracer_team_visible);
+	ColorToJson(data["esp"]["colors"], "tracer_enemy_visible", cfg::esp::colors::tracer_enemy_visible);
+
+	ColorToJson(data["esp"]["colors"], "chams_team", cfg::esp::colors::chams_team);
+	ColorToJson(data["esp"]["colors"], "chams_enemy", cfg::esp::colors::chams_enemy);
+	ColorToJson(data["esp"]["colors"], "chams_team_visible", cfg::esp::colors::chams_team_visible);
+	ColorToJson(data["esp"]["colors"], "chams_enemy_visible", cfg::esp::colors::chams_enemy_visible);
+
+	ColorToJson(data["esp"]["colors"], "eye_ray_team", cfg::esp::colors::eye_ray_team);
+	ColorToJson(data["esp"]["colors"], "eye_ray_enemy", cfg::esp::colors::eye_ray_enemy);
+	ColorToJson(data["esp"]["colors"], "eye_ray_team_visible", cfg::esp::colors::eye_ray_team_visible);
+	ColorToJson(data["esp"]["colors"], "eye_ray_enemy_visible", cfg::esp::colors::eye_ray_enemy_visible);
+
 	// spectator list
 	data["world"]["spectators"]["enabled"] = cfg::world::spectators::enabled;
 	data["world"]["spectators"]["detailed"] = cfg::world::spectators::detailed;
@@ -216,8 +392,8 @@ bool Config::WriteImpl() {
 	// flag colors
 	auto& fcol = col["flags"];
 
-	ColorToJson(fcol, "blinded_team", cfg::esp::colors::flags::flashed_team);
-	ColorToJson(fcol, "blinded_enemy", cfg::esp::colors::flags::flashed_enemy);
+	ColorToJson(fcol, "flashed_team", cfg::esp::colors::flags::flashed_team);
+	ColorToJson(fcol, "flashed_enemy", cfg::esp::colors::flags::flashed_enemy);
 
 	ColorToJson(fcol, "reloading_team", cfg::esp::colors::flags::reloading_team);
 	ColorToJson(fcol, "reloading_enemy", cfg::esp::colors::flags::reloading_enemy);
@@ -241,9 +417,13 @@ bool Config::WriteImpl() {
 	data["utils"]["defusal_notification"] = cfg::settings::defusal_notification;
 	//data["utils"]["open_menu_key"] = cfg::settings::open_menu_key;
 
-	f << std::setw(4) << data << std::endl;
-	f.close();
+	if (!config_document::WriteAtomic("config.json", data, error)) {
+		last_status = error;
+		LOGF(WARNING, "{}", error);
+		return false;
+	}
 
+	last_status = "Configuration saved";
 	LOGF(VERBOSE, "Writting configuration to file");
 
 	return true;

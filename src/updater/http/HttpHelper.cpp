@@ -1,5 +1,7 @@
 #include "HttpHelper.hpp"
 
+#include "core/version/AppVersion.hpp"
+
 #include <array>
 #include <fstream>
 #include <limits>
@@ -12,6 +14,7 @@ constexpr long kConnectTimeoutMilliseconds = 5'000;
 constexpr long kRequestTimeoutMilliseconds = 30'000;
 constexpr long kMaximumRedirects = 3;
 constexpr std::size_t kLegacyMaximumJsonBytes = 1024U * 1024U;
+const std::string kUserAgent = "Pluto/" + std::string{ app_version::current_text };
 
 struct CurlDeleter {
     void operator()(CURL* handle) const noexcept {
@@ -84,7 +87,7 @@ struct FileSink {
         && curl_easy_setopt(curl, CURLOPT_MAXREDIRS, kMaximumRedirects) == CURLE_OK
         && curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, kConnectTimeoutMilliseconds) == CURLE_OK
         && curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, kRequestTimeoutMilliseconds) == CURLE_OK
-        && curl_easy_setopt(curl, CURLOPT_USERAGENT, "Pluto/2.5.0") == CURLE_OK
+        && curl_easy_setopt(curl, CURLOPT_USERAGENT, kUserAgent.c_str()) == CURLE_OK
         && curl_easy_setopt(curl, CURLOPT_PROTOCOLS_STR, "http,https") == CURLE_OK
         && curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS_STR, "http,https") == CURLE_OK
         && curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L) == CURLE_OK

@@ -40,6 +40,7 @@ set LIBS=src/external/lib/libcurl.lib ^
 set SRCS=scripts\msvc\compatibility.cpp ^
          src/common.cpp ^
          src/config/Config.cpp ^
+         src/config/ConfigDocument.cpp ^
          src/core/engine/cache/Cache.cpp ^
          src/core/engine/classes/Bomb.cpp ^
          src/core/engine/Engine.cpp ^
@@ -64,11 +65,20 @@ set SRCS=scripts\msvc\compatibility.cpp ^
          src/external/imgui/imgui_tables.cpp ^
          src/external/imgui/imgui_widgets.cpp ^
          src/external/timer/timer.cpp ^
+         src/gui/frontend/esp/DrawPrimitives.cpp ^
          src/gui/frontend/esp/Esp.cpp ^
          src/gui/frontend/menu/Menu.cpp ^
+         src/gui/frontend/menu/MenuShell.cpp ^
+         src/gui/frontend/menu/pages/VisualsPage.cpp ^
+         src/gui/frontend/menu/pages/WorldPage.cpp ^
+         src/gui/frontend/menu/pages/SystemPage.cpp ^
+         src/gui/frontend/menu/pages/ConfigPage.cpp ^
+         src/gui/frontend/preview/EspPreview.cpp ^
          src/gui/frontend/overlays/Overlays.cpp ^
          src/gui/renderer/Renderer.cpp ^
          src/gui/renderer/window/Window.cpp ^
+         src/gui/theme/Theme.cpp ^
+         src/gui/widgets/Widgets.cpp ^
          src/main.cpp ^
          src/updater/http/HttpHelper.cpp ^
          src/updater/Updater.cpp

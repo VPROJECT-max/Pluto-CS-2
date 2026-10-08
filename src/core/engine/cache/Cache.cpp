@@ -32,15 +32,9 @@ bool Cache::RefreshImpl() {
     if (!game.Update())
         return false;
 
-#ifdef _DEBUG
-    // Testing performance
+    // Configurable from the Developer section (defaults to 2ms)
     if (now - last < (cfg::dev::cache_refresh_rate * 1ms)) 
         return true;
-#else
-    // Just refresh every 5ms good for most people
-    if (now - last < 5ms) 
-        return true; // All good
-#endif
 
     game.UpdateEntityList();
     globals.Update();

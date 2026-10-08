@@ -49,6 +49,14 @@ public:
 	static IDXGISwapChain* swap_chain;
 	static ID3D11RenderTargetView* render_targetview;
 
+	static ID3D11Texture2D* chams_texture;
+	static ID3D11RenderTargetView* chams_rtv;
+	static ID3D11ShaderResourceView* chams_srv;
+	static UINT chams_width;
+	static UINT chams_height;
+	static bool CreateChamsRenderTarget(UINT width, UINT height);
+	static void DestroyChamsRenderTarget();
+
 	inline static RECT bounds;
 	inline static bool shouldRun = true;
 

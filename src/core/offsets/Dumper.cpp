@@ -7,104 +7,33 @@ bool Dumper::Init() {
 }
 
 bool Dumper::InitImpl() {
-    auto process = Engine::GetProcess();
-    auto client = Engine::GetClient();
-    auto engine = Engine::GetEngine();
+    offsets::viewMatrix = generated_offsets::viewMatrix;
+    LOGF(VERBOSE, "Set 'viewMatrix' offset to 0x{:X}", offsets::viewMatrix);
 
-    DWORD64 temp = 0;
+    offsets::globalVars = generated_offsets::globalVars;
+    LOGF(VERBOSE, "Set 'globalVars' offset to 0x{:X}", offsets::globalVars);
 
-    // client.dll
+    offsets::entityList = generated_offsets::entityList;
+    LOGF(VERBOSE, "Set 'entityList' offset to 0x{:X}", offsets::entityList);
 
-    // View Matrix
-    if (!(temp = Scan(offsets::signatures::viewMatrix, client))) {
-        LOGF(FATAL, "Could not find offset for 'viewMatrix'");
-        return false;
-    }
+    offsets::localPlayerController = generated_offsets::localPlayerController;
+    LOGF(VERBOSE, "Set 'localPlayerController' offset to 0x{:X}", offsets::localPlayerController);
 
-    offsets::viewMatrix = temp - client.base;
-    LOGF(VERBOSE, "Found 'viewMatrix' offset at 0x{:X}", offsets::viewMatrix);
+    offsets::plantedC4 = generated_offsets::plantedC4;
+    LOGF(VERBOSE, "Set 'plantedC4' offset to 0x{:X}", offsets::plantedC4);
 
-    // Global Variables
-    if (!(temp = Scan(offsets::signatures::globalVars, client))) {
-        LOGF(FATAL, "Could not find offset for 'globalVars'");
-        return false;
-    }
+    offsets::weaponC4 = generated_offsets::weaponC4;
+    LOGF(VERBOSE, "Set 'weaponC4' offset to 0x{:X}", offsets::weaponC4);
 
-    offsets::globalVars = temp - client.base;
-    LOGF(VERBOSE, "Found 'globalVars' offset at 0x{:X}", offsets::globalVars);
+    offsets::buildNumber = generated_offsets::buildNumber;
+    LOGF(VERBOSE, "Set 'buildNumber' offset to 0x{:X}", offsets::buildNumber);
 
-    // Entity List
-    if (!(temp = Scan(offsets::signatures::entityList, client))) {
-        LOGF(FATAL, "Could not find offset for 'entityList'");
-        return false;
-    }
-
-    offsets::entityList = temp - client.base;
-    LOGF(VERBOSE, "Found 'entityList' offset at 0x{:X}", offsets::entityList);
-
-    // Local Player Controller
-    if (!(temp = Scan(offsets::signatures::localPlayerController, client))) {
-        LOGF(FATAL, "Could not find offset for 'localPlayerController'");
-        return false;
-    }
-
-    offsets::localPlayerController = temp - client.base;
-    LOGF(VERBOSE, "Found 'localPlayerController' offset at 0x{:X}", offsets::localPlayerController);
-
-    // C4
-    if (!(temp = Scan(offsets::signatures::plantedC4, client))) {
-        LOGF(FATAL, "Could not find offset for 'weaponC4'");
-        return false;
-    }
-
-    offsets::plantedC4 = temp - client.base;
-    LOGF(VERBOSE, "Found 'weaponC4' offset at 0x{:X}", offsets::plantedC4);
-
-    // C4 carrier pointer
-    if (!(temp = Scan(offsets::signatures::weaponC4, client))) {
-        LOGF(FATAL, "Could not find offset for 'weaponC4 carrier'");
-        return false;
-    }
-
-    offsets::weaponC4 = temp - client.base;
-    LOGF(VERBOSE, "Found 'weaponC4 carrier' offset at 0x{:X}", offsets::weaponC4);
-
-#if 0
-    // Local Player Pawn (tbh idk how to read it :1)
-    if (temp = Scan(offsets::signatures::localPlayerPawn, client); !temp) {
-        LOGF(FATAL, "Could not find offset for 'localPlayerPawn'");
-        return false;
-    }
-
-    offsets::localPlayerPawn = temp + 0x138 - client.base;
-    LOGF(VERBOSE, "Found 'localPlayerPawn' offset at 0x{:X}", offsets::localPlayerPawn);
- 
-
-    // Input
-    if (temp = Scan(offsets::signatures::csgoInput, client); !temp) {
-        LOGF(FATAL, "Could not find offset for 'csgoInput'");
-        return false;
-    }
-
-    offsets::csgoInput = temp - client.base;
-    LOGF(VERBOSE, "Found 'csgoInput' offset at 0x{:X}", offsets::csgoInput);
-#endif
-
-    // engine2.dll
-
-    // Build Number
-    if (!(temp = Scan(offsets::signatures::buildNumber, engine))) {
-        LOGF(FATAL, "Could not find offset for 'buildNumber'");
-        return false;
-    }
-
-    offsets::buildNumber = temp - engine.base;
-    LOGF(VERBOSE, "Found 'buildNumber' offset at 0x{:X}", offsets::buildNumber);
-
-    LOGF(INFO, "Successfully dumped offsets...");
+    LOGF(INFO, "Successfully loaded generated offsets (build {}, dump {})",
+        generated_offsets::source_build_number, generated_offsets::source_timestamp);
 
     return true;
 }
+
 
 DWORD64 Dumper::Scan(const std::string sig, ProcessModule module) {
     auto process = Engine::GetProcess();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/engine/cache/Cache.hpp"
+#include "gui/frontend/esp/DrawPrimitives.hpp"
 
 class Esp {
 public:
@@ -14,6 +15,16 @@ public:
     static void Render();
 
 private:
+	struct PlayerLayout {
+		esp_draw::ScreenRect bounds{};
+		ImVec2 projected{};
+		float distance_m = 0.0f;
+		float alpha = 1.0f;
+		bool on_screen = false;
+		bool visible = false;
+		bool mate = false;
+	};
+
     ImGuiIO io;
     ImFont* font;
     ImFont* font_merged_icons;
@@ -34,12 +45,15 @@ private:
     bool InitImpl();
     void RenderImpl();
 
-    void RenderPlayer(Player player, bool mate = false);
-    void RenderPlayerBones(Player player, bool mate = false);
-    void RenderPlayerBars(Player player, std::pair<Vec2_t, Vec2_t> bounds);
-    void RenderPlayerFalgs(Player player, std::pair<Vec2_t, Vec2_t> bounds, bool mate = false);
-    void RenderPlayerTracker(Player player, std::pair<Vec2_t, Vec2_t> bounds, bool mate = false);
-    void RenderPlayerTracers(Player source, Player player, bool mate = false);
+	bool BuildPlayerLayout(Player player, bool mate, PlayerLayout& layout);
+	void RenderPlayer(Player player, const PlayerLayout& layout);
+	void RenderPlayerBones(Player player, const PlayerLayout& layout);
+	void RenderPlayerChams(Player player, bool mate = false);
+	void RenderPlayerBars(Player player, const PlayerLayout& layout);
+	void RenderPlayerFalgs(Player player, const PlayerLayout& layout);
+	void RenderPlayerTracker(Player player, const PlayerLayout& layout);
+	void RenderPlayerEyeRay(Player player, const PlayerLayout& layout);
+	void RenderPlayerTracers(Player source, Player player, const PlayerLayout& layout);
 
 	void RenderCrosshair(Player local);
 };

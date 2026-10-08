@@ -36,6 +36,7 @@ public:
 	HANDLE		  handle_; // handle to process
 	HWND		  hwnd_; // window handle
 	ProcessModule base_client_;
+	DWORD		  last_module_error_ = 0; // win32 error from the last failed GetModule
 
 public:
 	bool AttachProcess(const char* process_name);

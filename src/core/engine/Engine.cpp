@@ -40,10 +40,8 @@ bool Engine::InitImpl() {
     if (!Config::Read())
         LOGF(WARNING, "Failed to parse config, using default values");
 
-#ifdef _DEBUG
     if (!cfg::dev::console)
         LogHelper::HideConsole();
-#endif
 
     std::thread(&Engine::Thread, this).detach();
 
@@ -101,12 +99,20 @@ bool Engine::AwaitModules() {
 
     do {
         this->client = process->GetModule("client.dll");
+        DWORD client_err = process->last_module_error_;
         this->engine = process->GetModule("engine2.dll");
+        DWORD engine_err = process->last_module_error_;
 
         if (this->client.base && this->engine.base)
             break;
 
         static int attempts = 0;
+
+        LOGF(WARNING, "Modules not found yet (attempt {}/12): client.dll={} (err {}), engine2.dll={} (err {})",
+            attempts + 1,
+            this->client.base ? "ok" : "missing", client_err,
+            this->engine.base ? "ok" : "missing", engine_err);
+
         if (attempts > 10)
             return false;
         attempts++;
@@ -114,5 +120,6 @@ bool Engine::AwaitModules() {
         std::this_thread::sleep_for(5s);
     } while (true);
 
+    LOGF(INFO, "Found client.dll at 0x{:X} and engine2.dll at 0x{:X}", this->client.base, this->engine.base);
     return true;
 }

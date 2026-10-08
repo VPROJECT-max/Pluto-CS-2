@@ -16,6 +16,7 @@ public:
 
     Vec3_t pos;
     Vec3_t vel;
+    Vec3_t eye_angles;
 
     int ping = 0;
     int team = 0;

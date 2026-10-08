@@ -1,3 +1,7 @@
+#pragma once
+
+#include "GeneratedOffsets.hpp"
+
 namespace offsets
 {
 	// client.dll
@@ -12,59 +16,60 @@ namespace offsets
 	inline DWORD buildNumber;
 
 	namespace controller {
-		constexpr std::ptrdiff_t m_iPing = 0x830; // uint32
-		constexpr std::ptrdiff_t m_hPawn = 0x6BC; // CHandle<C_BasePlayerPawn>
-		constexpr std::ptrdiff_t m_steamID = 0x780; // uint64
-		constexpr std::ptrdiff_t m_iszPlayerName = 0x6F4; // char[128]
-		constexpr std::ptrdiff_t m_bIsLocalPlayerController = 0x788; // bool
-		constexpr std::ptrdiff_t m_pInGameMoneyServices = 0x810; // CCSPlayerController_InGameMoneyServices*
-		constexpr std::ptrdiff_t m_iAccount = 0x40; // int32 - CCSPlayerController_InGameMoneyServices 
+		constexpr std::ptrdiff_t m_iPing = generated_offsets::m_iPing; // uint32
+		constexpr std::ptrdiff_t m_hPawn = generated_offsets::m_hPawn; // CHandle<C_BasePlayerPawn>
+		constexpr std::ptrdiff_t m_steamID = generated_offsets::m_steamID; // uint64
+		constexpr std::ptrdiff_t m_iszPlayerName = generated_offsets::m_iszPlayerName; // char[128]
+		constexpr std::ptrdiff_t m_bIsLocalPlayerController = generated_offsets::m_bIsLocalPlayerController; // bool
+		constexpr std::ptrdiff_t m_pInGameMoneyServices = generated_offsets::m_pInGameMoneyServices; // CCSPlayerController_InGameMoneyServices*
+		constexpr std::ptrdiff_t m_iAccount = generated_offsets::m_iAccount; // int32 - CCSPlayerController_InGameMoneyServices 
 	}
 
 	namespace pawn {
-		constexpr std::ptrdiff_t m_vOldOrigin = 0x13B8; // Vector
-		constexpr std::ptrdiff_t m_iHealth = 0x34C; // int32
-		constexpr std::ptrdiff_t m_iTeamNum = 0x3E7; // uint8
-		constexpr std::ptrdiff_t m_bIsScoped = 0x1C70; // bool
-		constexpr std::ptrdiff_t m_ArmorValue = 0x1C9C; // int32
-		constexpr std::ptrdiff_t m_bIsDefusing = 0x1C72; // bool
-		constexpr std::ptrdiff_t m_vecAbsVelocity = 0x3F8; // Vector
+		constexpr std::ptrdiff_t m_vOldOrigin = generated_offsets::m_vOldOrigin; // Vector
+		constexpr std::ptrdiff_t m_iHealth = generated_offsets::m_iHealth; // int32
+		constexpr std::ptrdiff_t m_iTeamNum = generated_offsets::m_iTeamNum; // uint8
+		constexpr std::ptrdiff_t m_bIsScoped = generated_offsets::m_bIsScoped; // bool
+		constexpr std::ptrdiff_t m_ArmorValue = generated_offsets::m_ArmorValue; // int32
+		constexpr std::ptrdiff_t m_bIsDefusing = generated_offsets::m_bIsDefusing; // bool
+		constexpr std::ptrdiff_t m_vecAbsVelocity = generated_offsets::m_vecAbsVelocity; // Vector
 
-		constexpr std::ptrdiff_t m_pGameSceneNode = 0x330; // CGameSceneNode*
+		constexpr std::ptrdiff_t m_pGameSceneNode = generated_offsets::m_pGameSceneNode; // CGameSceneNode*
 		
-		constexpr std::ptrdiff_t m_entitySpottedState = 0x11B0; // EntitySpottedState_t
-		constexpr std::ptrdiff_t m_bSpottedByMask = 0xC; // uint32[2] - EntitySpottedState_t
+		constexpr std::ptrdiff_t m_entitySpottedState = generated_offsets::m_entitySpottedState; // EntitySpottedState_t
+		constexpr std::ptrdiff_t m_bSpottedByMask = generated_offsets::m_bSpottedByMask; // uint32[2] - EntitySpottedState_t
 		
-		constexpr std::ptrdiff_t m_flFlashOverlayAlpha = 0x141C; // float32 - C_CSPlayerPawnBase 
+		constexpr std::ptrdiff_t m_flFlashOverlayAlpha = generated_offsets::m_flFlashOverlayAlpha; // float32 - C_CSPlayerPawnBase 
+		constexpr std::ptrdiff_t m_angEyeAngles = generated_offsets::m_angEyeAngles; // QAngle
 		
-		constexpr std::ptrdiff_t m_pWeaponServices = 0x1208; // CPlayer_WeaponServices*
-		constexpr std::ptrdiff_t m_hActiveWeapon = 0x60; // CHandle<C_BasePlayerWeapon> - CPlayer_WeaponServices
-		constexpr std::ptrdiff_t m_AttributeManager = 0x11A8; // C_AttributeContainer - C_EconEntity (parent of C_BasePlayerWeapon)
-		constexpr std::ptrdiff_t m_Item = 0x50; // C_EconItemView - C_AttributeContainer
-		constexpr std::ptrdiff_t m_iItemDefinitionIndex = 0x1BA; // uint16 - C_EconItemView
-		constexpr std::ptrdiff_t m_iClip1 = 0x1700; // int32 - C_BasePlayerWeapon
-		constexpr std::ptrdiff_t m_bInReload = 0x1814; // bool - C_CSWeaponBase
-		constexpr std::ptrdiff_t m_pObserverServices = 0x1220; // CPlayer_ObserverServices*
+		constexpr std::ptrdiff_t m_pWeaponServices = generated_offsets::m_pWeaponServices; // CPlayer_WeaponServices*
+		constexpr std::ptrdiff_t m_hActiveWeapon = generated_offsets::m_hActiveWeapon; // CHandle<C_BasePlayerWeapon> - CPlayer_WeaponServices
+		constexpr std::ptrdiff_t m_AttributeManager = generated_offsets::m_AttributeManager; // C_AttributeContainer - C_EconEntity (parent of C_BasePlayerWeapon)
+		constexpr std::ptrdiff_t m_Item = generated_offsets::m_Item; // C_EconItemView - C_AttributeContainer
+		constexpr std::ptrdiff_t m_iItemDefinitionIndex = generated_offsets::m_iItemDefinitionIndex; // uint16 - C_EconItemView
+		constexpr std::ptrdiff_t m_iClip1 = generated_offsets::m_iClip1; // int32 - C_BasePlayerWeapon
+		constexpr std::ptrdiff_t m_bInReload = generated_offsets::m_bInReload; // bool - C_CSWeaponBase
+		constexpr std::ptrdiff_t m_pObserverServices = generated_offsets::m_pObserverServices; // CPlayer_ObserverServices*
 	}
 
 	namespace bomb {
 		constexpr std::ptrdiff_t m_isPlanted = 0x8; // unk
-		constexpr std::ptrdiff_t m_bC4Activated = 0x11E8; // bool
-		constexpr std::ptrdiff_t m_nBombSite = 0x11A4; // int32
-		constexpr std::ptrdiff_t m_bBeingDefused = 0x11DC; // bool
-		constexpr std::ptrdiff_t m_flDefuseCountDown = 0x11F0; // GameTime_t
+		constexpr std::ptrdiff_t m_bC4Activated = generated_offsets::m_bC4Activated; // bool
+		constexpr std::ptrdiff_t m_nBombSite = generated_offsets::m_nBombSite; // int32
+		constexpr std::ptrdiff_t m_bBeingDefused = generated_offsets::m_bBeingDefused; // bool
+		constexpr std::ptrdiff_t m_flDefuseCountDown = generated_offsets::m_flDefuseCountDown; // GameTime_t
 
-		constexpr std::ptrdiff_t m_vecAbsOrigin = 0xC8; // VectorWS - CGameSceneNode 
+		constexpr std::ptrdiff_t m_vecAbsOrigin = generated_offsets::m_vecAbsOrigin; // VectorWS - CGameSceneNode 
 	}
 
 	namespace bone {
-		constexpr std::ptrdiff_t m_modelState = 0x140; // CModelState
+		constexpr std::ptrdiff_t m_modelState = generated_offsets::m_modelState; // CModelState
 	}
 
 	namespace observerServices {
-		constexpr std::ptrdiff_t m_iObserverMode = 0x48;
-		constexpr std::ptrdiff_t m_hObserverTarget = 0x4C;
-		constexpr std::ptrdiff_t m_bForcedObserverMode = 0x54; // bool
+		constexpr std::ptrdiff_t m_iObserverMode = generated_offsets::m_iObserverMode;
+		constexpr std::ptrdiff_t m_hObserverTarget = generated_offsets::m_hObserverTarget;
+		constexpr std::ptrdiff_t m_bForcedObserverMode = generated_offsets::m_bForcedObserverMode; // bool
 	}
 
 	namespace global {

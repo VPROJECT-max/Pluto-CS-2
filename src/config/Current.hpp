@@ -12,10 +12,23 @@ namespace cfg {
 		inline bool skeleton = true;
 		inline bool head_tracker = true;
 		inline bool health_number = false;
+		inline int box_style = 0; // 0 = full, 1 = corner
+		inline float box_thickness = 1.0f;
+		inline bool outline = true;
+		inline bool offscreen_indicators = true;
+		inline float fade_start = 45.0f;
+		inline float fade_end = 110.0f;
+		inline float max_distance = 140.0f;
+		inline float skeleton_thickness = 1.5f;
+		inline float text_scale = 1.0f;
+		inline float bar_thickness = 2.0f;
 
 		inline bool spotted = false;
 
 		inline bool tracers = false;
+		inline bool chams = false;
+		inline bool eye_ray = false;
+		inline bool visible_check = false;
 
 		namespace flags {
 			inline bool name = true;
@@ -34,15 +47,33 @@ namespace cfg {
 		namespace colors {
 			inline color_t box_team{ 0.f, 1.f, 0.29f, 0.5f };
 			inline color_t box_enemy{ 1.f, 0.f, 0.f, 0.5f };
+			inline color_t box_team_visible{ 0.f, 1.f, 0.29f, 0.8f };
+			inline color_t box_enemy_visible{ 1.f, 0.5f, 0.f, 0.8f };
 
 			inline color_t skeleton_team{ 0.f, 1.f, 0.f, 0.5f };
 			inline color_t skeleton_enemy{ 1.f, 0.f, 0.f, 0.5f };
+			inline color_t skeleton_team_visible{ 0.f, 1.f, 0.f, 0.8f };
+			inline color_t skeleton_enemy_visible{ 1.f, 0.5f, 0.f, 0.8f };
 
 			inline color_t tracker_team{ 1.f, 1.f, 1.f, 0.3f };
 			inline color_t tracker_enemy{ 1.f, 1.f, 1.f, 0.3f };
+			inline color_t tracker_team_visible{ 1.f, 1.f, 1.f, 0.8f };
+			inline color_t tracker_enemy_visible{ 1.f, 0.5f, 0.f, 0.8f };
 
 			inline color_t tracer_team{ 0.f, 1.f, 0.f, 0.5f };
 			inline color_t tracer_enemy{ 1.f, 0.f, 0.f, 0.5f };
+			inline color_t tracer_team_visible{ 0.f, 1.f, 0.f, 0.8f };
+			inline color_t tracer_enemy_visible{ 1.f, 0.5f, 0.f, 0.8f };
+
+			inline color_t chams_team{ 0.f, 1.f, 0.f, 0.7f };
+			inline color_t chams_enemy{ 1.f, 0.f, 0.f, 0.7f };
+			inline color_t chams_team_visible{ 0.f, 1.f, 0.f, 1.0f };
+			inline color_t chams_enemy_visible{ 1.f, 0.5f, 0.f, 1.0f };
+
+			inline color_t eye_ray_team{ 0.f, 1.f, 1.f, 0.5f };
+			inline color_t eye_ray_enemy{ 1.f, 1.f, 0.f, 0.5f };
+			inline color_t eye_ray_team_visible{ 0.f, 1.f, 1.f, 0.8f };
+			inline color_t eye_ray_enemy_visible{ 1.f, 1.f, 0.f, 0.8f };
 
 			namespace flags {
 				inline color_t flashed_team{ 1.f, 1.f, 1.f, 0.5f };
@@ -117,7 +148,7 @@ namespace cfg {
 	namespace dev {
 		inline bool console = true;
 		inline int open_menu_key = false;
-		inline int cache_refresh_rate = 5;
+		inline int cache_refresh_rate = 2;
 		inline bool force_show_flags = false;
 	}
 }

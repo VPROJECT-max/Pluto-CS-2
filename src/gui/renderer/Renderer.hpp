@@ -32,6 +32,7 @@ private:
 private:
     bool isRunning = true;
     bool isOpen = false;
+    bool isAuthenticated = false;
 
     bool isFocused = false;
 };

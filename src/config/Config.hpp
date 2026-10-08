@@ -14,6 +14,11 @@ public:
 
     static bool Read();
     static bool Write();
+    static bool ResetEsp();
+    static bool ResetWorld();
+    static bool ResetSettings();
+    static bool ResetAll();
+    static const std::string& LastStatus();
 private:
     Config() {};
 
@@ -25,6 +30,7 @@ private:
 
     bool ReadImpl();
     bool WriteImpl();
+	std::string last_status{ "Configuration not loaded" };
 
     static color_t JsonToColor(const json& parent, const std::string& key, const color_t& def);
     static void ColorToJson(json& parent, const std::string& key, const color_t& color);
