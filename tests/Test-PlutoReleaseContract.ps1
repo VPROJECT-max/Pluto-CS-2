@@ -34,8 +34,12 @@ Assert-Match $releaseWorkflow 'gh release create' 'Release workflow must publish
 Assert-Match $releaseWorkflow 'dist[/\\]Pluto-portable\.exe' 'Release workflow asset name mismatch'
 Assert-Match $releaseWorkflow 'contents:\s*write' 'Release workflow requires contents write permission'
 Assert-Match $releaseWorkflow 'function Invoke-Checked' 'Release workflow must fail immediately when any verification process fails'
+Assert-Match $releaseWorkflow 'Write-Host\s+"Running:' 'Release workflow must identify each verification process before launch'
+Assert-Match $releaseWorkflow 'WaitForExit\(' 'Release workflow must bound every verification process'
 Assert-Match $mainWorkflow 'branches:\s*- main' 'Main workflow must build the main branch'
 Assert-Match $mainWorkflow 'function Invoke-Checked' 'Main workflow must fail immediately when any verification process fails'
+Assert-Match $mainWorkflow 'Write-Host\s+"Running:' 'Main workflow must identify each verification process before launch'
+Assert-Match $mainWorkflow 'WaitForExit\(' 'Main workflow must bound every verification process'
 if ($mainWorkflow -match 'gh release create|action-gh-release') {
     throw 'Main workflow must not publish a release'
 }

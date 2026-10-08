@@ -54,10 +54,23 @@ jobs:
         shell: pwsh
         run: |
           function Invoke-Checked {
-            param([string]$FilePath, [string[]]$ArgumentList = @())
-            & $FilePath @ArgumentList
-            if ($LASTEXITCODE -ne 0) {
-              throw "$FilePath failed with exit code $LASTEXITCODE"
+            param(
+              [string]$FilePath,
+              [string[]]$ArgumentList = @(),
+              [int]$TimeoutSeconds = 120
+            )
+            Write-Host "Running: $FilePath $($ArgumentList -join ' ')"
+            $process = Start-Process -FilePath $FilePath -ArgumentList $ArgumentList -NoNewWindow -PassThru
+            try {
+              if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+                taskkill.exe /PID $process.Id /T /F | Out-Null
+                throw "$FilePath timed out after $TimeoutSeconds seconds"
+              }
+              if ($process.ExitCode -ne 0) {
+                throw "$FilePath failed with exit code $($process.ExitCode)"
+              }
+            } finally {
+              $process.Dispose()
             }
           }
 
