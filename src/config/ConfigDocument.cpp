@@ -25,7 +25,7 @@ json Defaults() {
             { "flags", json::object() }, { "colors", json::object() },
         } },
         { "world", json::object() },
-        { "utils", json::object() },
+        { "utils", { { "debug_overlay", false } } },
     };
 }
 
@@ -87,6 +87,7 @@ json Normalize(json document) {
     EnsureObject(document, "esp");
     EnsureObject(document, "world");
     EnsureObject(document, "utils");
+    EnsureScalar(document["utils"], "debug_overlay", false);
 
     auto& esp = document["esp"];
     const auto& esp_defaults = defaults["esp"];

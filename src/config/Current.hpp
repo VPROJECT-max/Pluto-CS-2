@@ -141,6 +141,7 @@ namespace cfg {
 		inline bool free_cpu = true;
 		inline bool force_third_person = false;
 		inline bool defusal_notification = true;
+		inline bool debug_overlay = false;
 	}
 
 

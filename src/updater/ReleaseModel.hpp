@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include <nlohmann/json_fwd.hpp>
 
@@ -28,5 +29,8 @@ struct ReleaseInfo final {
 [[nodiscard]] bool ShouldInstall(
     app_version::SemanticVersion current,
     const ReleaseInfo& release) noexcept;
+
+[[nodiscard]] bool IsApprovedMetadataResponseUrl(std::string_view url) noexcept;
+[[nodiscard]] bool IsApprovedAssetResponseUrl(std::string_view url) noexcept;
 
 } // namespace updater

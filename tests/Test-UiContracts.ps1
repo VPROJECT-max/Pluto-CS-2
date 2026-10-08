@@ -33,8 +33,12 @@ foreach ($key in @('team','box','armor','health','skeleton','head_tracker','heal
 foreach ($key in @('spectators','bomb','crosshair','radar','velocity')) {
     if ($world -notmatch "cfg::world::$key") { throw "World setting group missing: cfg::world::$key" }
 }
-foreach ($key in @('watermark','streamproof','vsync','free_cpu','force_third_person','defusal_notification')) {
+foreach ($key in @('watermark','streamproof','vsync','free_cpu','force_third_person','defusal_notification','debug_overlay')) {
     if ($system -notmatch "cfg::settings::$key") { throw "System setting missing: cfg::settings::$key" }
 }
+
+$overlays = Get-Content -Raw -LiteralPath (Require-File 'src/gui/frontend/overlays/Overlays.cpp')
+if ($overlays -match 'C:\\Users\\') { throw 'Overlay source contains a machine-specific user path' }
+if ($overlays -notmatch 'cfg::settings::debug_overlay') { throw 'Debug overlay is not controlled by a persisted setting' }
 
 Write-Output 'ui contracts passed'

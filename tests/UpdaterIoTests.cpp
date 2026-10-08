@@ -55,11 +55,13 @@ int main(int argc, char* argv[]) {
         auto result = HttpHelper::GetJson(base_url + "/json", document, 128);
         assert(result.ok());
         assert(document.at("ok").get<bool>());
+        assert(result.effective_url == base_url + "/json");
 
         document.clear();
         result = HttpHelper::GetJson(base_url + "/redirect", document, 128);
         assert(result.ok());
         assert(document.at("ok").get<bool>());
+        assert(result.effective_url == base_url + "/json");
 
         document.clear();
         result = HttpHelper::GetJson(base_url + "/oversized", document, 64);

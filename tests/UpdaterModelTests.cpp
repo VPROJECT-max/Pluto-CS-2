@@ -65,6 +65,18 @@ int main() {
     assert(release->asset.size == 42);
     assert(release->asset.sha256_hex == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
     assert(updater::ShouldInstall(app_version::current, *release));
+    assert(updater::IsApprovedMetadataResponseUrl(
+        "https://api.github.com/repos/VPROJECT-max/Pluto-CS-2/releases/latest"));
+    assert(!updater::IsApprovedMetadataResponseUrl(
+        "http://api.github.com/repos/VPROJECT-max/Pluto-CS-2/releases/latest"));
+    assert(!updater::IsApprovedMetadataResponseUrl("https://api.github.com.evil.invalid/result"));
+    assert(updater::IsApprovedAssetResponseUrl(release->asset.download_url));
+    assert(updater::IsApprovedAssetResponseUrl(
+        "https://release-assets.githubusercontent.com/github-production-release-asset/123/file"));
+    assert(updater::IsApprovedAssetResponseUrl(
+        "https://objects.githubusercontent.com/github-production-release-asset/123/file"));
+    assert(!updater::IsApprovedAssetResponseUrl("http://release-assets.githubusercontent.com/file"));
+    assert(!updater::IsApprovedAssetResponseUrl("https://release-assets.githubusercontent.com.evil.invalid/file"));
 
     auto equal_release = *release;
     equal_release.version = app_version::current;

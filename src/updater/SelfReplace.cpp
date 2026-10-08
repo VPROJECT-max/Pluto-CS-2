@@ -78,15 +78,30 @@ namespace {
     return quoted;
 }
 
-[[nodiscard]] bool WaitForProcess(const std::uint32_t process_id, std::string& error) {
-    HANDLE process = OpenProcess(SYNCHRONIZE, FALSE, process_id);
+[[nodiscard]] bool WaitForMatchingProcess(
+    const std::uint32_t process_id,
+    const std::filesystem::path& expected_executable,
+    std::string& error) {
+    HANDLE process = OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, process_id);
     if (process == nullptr) {
-        if (GetLastError() == ERROR_INVALID_PARAMETER) {
-            return true;
-        }
         error = "Unable to open the previous Pluto process";
         return false;
     }
+
+    std::wstring image_path(32'768, L'\0');
+    DWORD image_path_length = static_cast<DWORD>(image_path.size());
+    if (!QueryFullProcessImageNameW(process, 0, image_path.data(), &image_path_length)) {
+        CloseHandle(process);
+        error = "Unable to identify the previous Pluto process";
+        return false;
+    }
+    image_path.resize(image_path_length);
+    if (!EqualNormalizedPath(image_path, expected_executable)) {
+        CloseHandle(process);
+        error = "Previous process executable does not match the requested Pluto target";
+        return false;
+    }
+
     const DWORD wait = WaitForSingleObject(process, 60'000);
     CloseHandle(process);
     if (wait != WAIT_OBJECT_0) {
@@ -183,7 +198,7 @@ bool ValidateCleanupRequest(const CleanupRequest& request, std::string& error) {
 }
 
 ReplaceOperations DefaultReplaceOperations() {
-    return ReplaceOperations{ WaitForProcess, MoveReplace, CopyReplace, Launch };
+    return ReplaceOperations{ WaitForMatchingProcess, MoveReplace, CopyReplace, Launch };
 }
 
 int ApplyVerifiedUpdate(
@@ -193,14 +208,15 @@ int ApplyVerifiedUpdate(
     if (!ValidateApplyRequest(request, error)) {
         return 2;
     }
-    if (!operations.wait_for_process
+    if (!operations.wait_for_matching_process
         || !operations.move_replace
         || !operations.copy_replace
         || !operations.launch) {
         error = "Update replacement operations are incomplete";
         return 3;
     }
-    if (!operations.wait_for_process(request.parent_process_id, error)) {
+    if (!operations.wait_for_matching_process(
+        request.parent_process_id, request.original_executable, error)) {
         return 4;
     }
     if (!operations.move_replace(request.original_executable, request.rollback_executable, error)) {
@@ -232,7 +248,8 @@ bool CleanupUpdate(const CleanupRequest& request, std::string& error) {
     if (!ValidateCleanupRequest(request, error)) {
         return false;
     }
-    if (!WaitForProcess(request.parent_process_id, error)) {
+    if (!WaitForMatchingProcess(
+        request.parent_process_id, request.staged_executable, error)) {
         return false;
     }
 

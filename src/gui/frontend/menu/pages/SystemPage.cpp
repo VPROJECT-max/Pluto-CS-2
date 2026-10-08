@@ -23,6 +23,8 @@ void RenderSystem(MenuContext& context) {
         "Yields CPU time between frames. Disable only if frame pacing is uneven.");
     Toggle("third_person", "Force third person", &cfg::settings::force_third_person);
     Toggle("defusal_notification", "Defusal notification", &cfg::settings::defusal_notification);
+    Toggle("debug_overlay", "Debug overlay", &cfg::settings::debug_overlay,
+        "Shows live map, cache, bomb, and player diagnostics.");
 
     SectionHeader("Interface");
     Toggle("diagnostics", "Show diagnostics", &context.show_diagnostics);

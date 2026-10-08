@@ -6,8 +6,6 @@
 #include "gui/frontend/menu/Menu.hpp" // Circular dependency
 #include "assets/fonts/WeaponIcons.h"
 #include "../../../../starline-imgui-menu-GOOD FOR CS 2/external_esp_menu.h"
-#include <Windows.h>
-#pragma comment(lib, "winmm.lib")
 
 bool Overlays::Init() {
     return GetInstance().InitImpl();
@@ -35,7 +33,10 @@ bool Overlays::InitImpl() {
 	io.Fonts->AddFontFromMemoryTTF(weapon_icon_font, weapon_icon_font_len, 12.f, &merge_icon_cfg, icon_ranges);
 
     // Pre allocate buffer
-    this->vel_buffer.resize(static_cast<size_t>(cfg::world::velocity::sample_rate * cfg::world::velocity::sample_length));
+    const auto initial_samples = static_cast<size_t>(
+        (std::max)(1, cfg::world::velocity::sample_rate)
+        * (std::max)(1.0f, cfg::world::velocity::sample_length));
+    this->vel_buffer.resize((std::max)(std::size_t{ 2 }, initial_samples));
 
     return true;
 }
@@ -48,7 +49,8 @@ void Overlays::RenderImpl() {
         RenderNotice();
         RenderDefusingNotification();
 
-        RenderDebugWindow();
+        if (cfg::settings::debug_overlay)
+            RenderDebugWindow();
 
     }
     ImGui::PopFont();
@@ -204,8 +206,8 @@ void Overlays::RenderSpeedChart() {
     auto& pos = cfg::world::velocity::pos;
     auto& size = cfg::world::velocity::size;
 
-    int rate = cfg::world::velocity::sample_rate;
-    float length = cfg::world::velocity::sample_length;
+    const int rate = (std::max)(1, cfg::world::velocity::sample_rate);
+    const float length = (std::max)(1.0f, cfg::world::velocity::sample_length);
 
     static int prev_rate = rate;
     static float prev_length = length;
@@ -225,12 +227,11 @@ void Overlays::RenderSpeedChart() {
         ImGui::SetNextWindowBgAlpha(0.1f);
         ImGui::SetNextWindowPos(pos - Vec2_t(0, altitude_padding), ImGuiCond_Once);
         ImGui::SetNextWindowSize(size + Vec2_t(0, height_padding), ImGuiCond_Once);
-        if (ImGui::Begin("Velocity Graph", nullptr, ImGuiWindowFlags_NoCollapse))
-        {
+        if (ImGui::Begin("Velocity Graph", nullptr, ImGuiWindowFlags_NoCollapse)) {
             pos = ImGui::GetWindowPos() + ImVec2(0, altitude_padding);
             size = ImGui::GetWindowSize() - ImVec2(0, height_padding);
-            ImGui::End();
         }
+        ImGui::End();
     }
 
     // Cache menu values and resize when changed
@@ -238,7 +239,7 @@ void Overlays::RenderSpeedChart() {
         prev_rate = rate;
         prev_length = length;
 
-        vel_buffer.resize(static_cast<size_t>(rate * length));
+        vel_buffer.resize((std::max)(std::size_t{ 2 }, static_cast<size_t>(rate * length)));
     }
 
     const Vec2_t speed_2d(local.vel.x, local.vel.y);
@@ -376,8 +377,8 @@ void Overlays::RenderRadar() {
         if (ImGui::Begin("Radar", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar)) {
             pos = ImGui::GetWindowPos();
             size = ImGui::GetWindowSize();
-            ImGui::End();
         }
+        ImGui::End();
     }
 
     auto d = ImGui::GetBackgroundDrawList();
@@ -516,8 +517,8 @@ void Overlays::RenderBomb() {
 
         if (ImGui::Begin("Bomb Window", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoResize)) {
             cfg::world::bomb::pos = ImGui::GetWindowPos();
-            ImGui::End();
         }
+        ImGui::End();
 
         ImGui::PopStyleVar();
     }
@@ -609,12 +610,6 @@ void Overlays::RenderDefusingNotification() {
     // Detect state change from not-defusing to defusing
     if (bomb.is_planted && bomb.is_being_defused && !was_defusing) {
         start_time = ImGui::GetTime();
-        // Play notification sound with mciSendString to control volume
-        // Since mciSendString can handle mp3 and volume easily
-        mciSendStringA("close defuse_snd", nullptr, 0, nullptr);
-        mciSendStringA("open \"C:\\Users\\ddeni\\Downloads\\myinstants.mp3\" type mpegvideo alias defuse_snd", nullptr, 0, nullptr);
-        mciSendStringA("setaudio defuse_snd volume to 300", nullptr, 0, nullptr); // Lower volume (0-1000)
-        mciSendStringA("play defuse_snd", nullptr, 0, nullptr);
     }
     
     was_defusing = bomb.is_being_defused;

@@ -111,6 +111,10 @@ void LogSkipped(const std::string& reason) {
         LOGF(WARNING, "Pluto update check failed; continuing current version: {}", metadata.error);
         return StartupAction::continue_launch;
     }
+    if (!IsApprovedMetadataResponseUrl(metadata.effective_url)) {
+        LOGF(WARNING, "Pluto update metadata ended at an unapproved URL");
+        return StartupAction::continue_launch;
+    }
 
     std::string error;
     const auto release = ParseLatestRelease(document, error);
@@ -142,6 +146,11 @@ void LogSkipped(const std::string& reason) {
         release->asset.size);
     if (!download.ok()) {
         LOGF(WARNING, "Pluto update download failed; continuing current version: {}", download.error);
+        return StartupAction::continue_launch;
+    }
+    if (!IsApprovedAssetResponseUrl(download.effective_url)) {
+        std::filesystem::remove(paths->partial_executable, filesystem_error);
+        LOGF(WARNING, "Pluto update download ended at an unapproved URL");
         return StartupAction::continue_launch;
     }
     if (!VerifyFile(

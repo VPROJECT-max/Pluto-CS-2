@@ -24,6 +24,7 @@ struct HttpResult {
     long status_code{};
     CURLcode curl_code{ CURLE_OK };
     std::string error;
+    std::string effective_url;
 
     [[nodiscard]] bool ok() const noexcept {
         return curl_code == CURLE_OK && status_code == 200 && error.empty();

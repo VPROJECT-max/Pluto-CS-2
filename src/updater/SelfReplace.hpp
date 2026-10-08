@@ -26,7 +26,8 @@ struct CleanupRequest {
 };
 
 struct ReplaceOperations {
-    std::function<bool(std::uint32_t, std::string&)> wait_for_process;
+    std::function<bool(std::uint32_t, const std::filesystem::path&, std::string&)>
+        wait_for_matching_process;
     std::function<bool(const std::filesystem::path&, const std::filesystem::path&, std::string&)> move_replace;
     std::function<bool(const std::filesystem::path&, const std::filesystem::path&, std::string&)> copy_replace;
     std::function<bool(const std::filesystem::path&, std::span<const std::wstring>, std::string&)> launch;

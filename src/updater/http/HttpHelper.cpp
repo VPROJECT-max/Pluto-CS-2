@@ -81,6 +81,9 @@ struct FileSink {
     const std::string& url,
     curl_slist* headers,
     std::array<char, CURL_ERROR_SIZE>& error_buffer) {
+    const char* redirect_protocols = std::string_view{ url }.starts_with("https://")
+        ? "https"
+        : "http,https";
     return curl_easy_setopt(curl, CURLOPT_URL, url.c_str()) == CURLE_OK
         && curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers) == CURLE_OK
         && curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L) == CURLE_OK
@@ -89,7 +92,7 @@ struct FileSink {
         && curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, kRequestTimeoutMilliseconds) == CURLE_OK
         && curl_easy_setopt(curl, CURLOPT_USERAGENT, kUserAgent.c_str()) == CURLE_OK
         && curl_easy_setopt(curl, CURLOPT_PROTOCOLS_STR, "http,https") == CURLE_OK
-        && curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS_STR, "http,https") == CURLE_OK
+        && curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS_STR, redirect_protocols) == CURLE_OK
         && curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L) == CURLE_OK
         && curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L) == CURLE_OK
         && curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L) == CURLE_OK
@@ -147,6 +150,11 @@ std::size_t WriteDownload(char* data, const std::size_t size, const std::size_t 
 
 void FinishResult(CURL* curl, HttpResult& result, const std::array<char, CURL_ERROR_SIZE>& buffer) {
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &result.status_code);
+    char* effective_url = nullptr;
+    if (curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &effective_url) == CURLE_OK
+        && effective_url != nullptr) {
+        result.effective_url = effective_url;
+    }
     if (result.curl_code != CURLE_OK) {
         result.error = buffer.front() != '\0' ? buffer.data() : curl_easy_strerror(result.curl_code);
     }

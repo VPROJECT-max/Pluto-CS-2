@@ -24,7 +24,8 @@ std::string ReadText(const std::filesystem::path& path) {
 
 updater::ReplaceOperations TestOperations(const bool launch_succeeds) {
     updater::ReplaceOperations operations;
-    operations.wait_for_process = [](std::uint32_t, std::string&) { return true; };
+    operations.wait_for_matching_process = [](
+        std::uint32_t, const std::filesystem::path&, std::string&) { return true; };
     operations.move_replace = [](const auto& source, const auto& destination, std::string& error) {
         std::error_code code;
         std::filesystem::remove(destination, code);
@@ -97,6 +98,19 @@ int main() {
     };
     assert(updater::ValidateApplyRequest(valid, error));
 
+    auto mismatched_parent = TestOperations(true);
+    mismatched_parent.wait_for_matching_process = [](
+        std::uint32_t, const std::filesystem::path&, std::string& operation_error) {
+        operation_error = "parent executable mismatch";
+        return false;
+    };
+    std::filesystem::create_directories(paths->staged_executable.parent_path());
+    WriteText(paths->original_executable, "old-parent-check");
+    WriteText(paths->staged_executable, "new-parent-check");
+    assert(updater::ApplyVerifiedUpdate(valid, mismatched_parent, error) == 4);
+    assert(ReadText(paths->original_executable) == "old-parent-check");
+    assert(ReadText(paths->staged_executable) == "new-parent-check");
+
     auto outside = valid;
     outside.staged_executable = root / "outside.exe";
     assert(!updater::ValidateApplyRequest(outside, error));
@@ -107,7 +121,6 @@ int main() {
     traversal.staged_executable = local / "Pluto" / "Updates" / "2.5.1" / ".." / ".." / "outside.exe";
     assert(!updater::ValidateApplyRequest(traversal, error));
 
-    std::filesystem::create_directories(paths->staged_executable.parent_path());
     WriteText(paths->original_executable, "old");
     WriteText(paths->staged_executable, "new");
     assert(updater::ApplyVerifiedUpdate(valid, TestOperations(true), error) == 0);

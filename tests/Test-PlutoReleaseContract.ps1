@@ -19,6 +19,7 @@ $builder = Get-Content -Raw (Join-Path $repo 'tools\BuildPortable.ps1')
 $releaseWorkflow = Get-Content -Raw (Join-Path $repo '.github\workflows\release.yml')
 $mainWorkflow = Get-Content -Raw (Join-Path $repo '.github\workflows\auto_build.yml')
 $project = Get-Content -Raw (Join-Path $repo 'src\src.vcxproj')
+$httpHelper = Get-Content -Raw (Join-Path $repo 'src\updater\http\HttpHelper.cpp')
 
 $versionMatch = [regex]::Match($versionHeader, 'current_text\s*\{\s*"(?<version>\d+\.\d+\.\d+)"\s*\}')
 if (-not $versionMatch.Success) { throw 'Unable to parse AppVersion current_text' }
@@ -40,5 +41,7 @@ if ($mainWorkflow -match 'gh release create|action-gh-release') {
 }
 Assert-Match $project '<UACExecutionLevel>RequireAdministrator</UACExecutionLevel>' 'Project must require administrator privileges'
 Assert-Match $project '<ResourceCompile Include="Pluto\.rc"' 'Project must compile Pluto resources'
+Assert-Match $httpHelper 'starts_with\("https://"\)\s*\?\s*"https"' 'HTTPS requests must reject plaintext redirects'
+Assert-Match $httpHelper 'CURLINFO_EFFECTIVE_URL' 'Updater HTTP results must expose the effective URL'
 
 Write-Output 'Pluto release contract passed'

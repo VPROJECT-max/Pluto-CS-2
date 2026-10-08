@@ -77,6 +77,7 @@ void ResetSettingsDefaults() {
 	cfg::settings::free_cpu = true;
 	cfg::settings::force_third_person = false;
 	cfg::settings::defusal_notification = true;
+	cfg::settings::debug_overlay = false;
 }
 
 } // namespace
@@ -260,6 +261,7 @@ bool Config::ReadImpl() {
 		cfg::settings::free_cpu = data["utils"].value("free_cpu", true);
 		cfg::settings::force_third_person = data["utils"].value("force_third_person", false);
 		cfg::settings::defusal_notification = data["utils"].value("defusal_notification", true);
+		cfg::settings::debug_overlay = data["utils"].value("debug_overlay", false);
 		//cfg::settings::open_menu_key = data["utils"].value("open_menu_key", 0);
 	}
 	catch (const std::exception& e) {
@@ -415,6 +417,7 @@ bool Config::WriteImpl() {
 	data["utils"]["free_cpu"] = cfg::settings::free_cpu;
 	data["utils"]["force_third_person"] = cfg::settings::force_third_person;
 	data["utils"]["defusal_notification"] = cfg::settings::defusal_notification;
+	data["utils"]["debug_overlay"] = cfg::settings::debug_overlay;
 	//data["utils"]["open_menu_key"] = cfg::settings::open_menu_key;
 
 	if (!config_document::WriteAtomic("config.json", data, error)) {

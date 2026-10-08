@@ -46,6 +46,7 @@ int main() {
     assert(safe["esp"]["custom_nested"] == 42);
     assert(safe["world"].is_object());
     assert(safe["utils"].is_object());
+    assert(safe["utils"]["debug_overlay"] == false);
 
     const auto root = TestRoot();
     std::filesystem::remove_all(root);

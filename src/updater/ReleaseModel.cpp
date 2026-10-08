@@ -133,4 +133,14 @@ bool ShouldInstall(
     return release.version > current;
 }
 
+bool IsApprovedMetadataResponseUrl(const std::string_view url) noexcept {
+    return url.starts_with("https://api.github.com/");
+}
+
+bool IsApprovedAssetResponseUrl(const std::string_view url) noexcept {
+    return url.starts_with(kDownloadPrefix)
+        || url.starts_with("https://release-assets.githubusercontent.com/")
+        || url.starts_with("https://objects.githubusercontent.com/");
+}
+
 } // namespace updater
