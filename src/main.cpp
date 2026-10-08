@@ -19,30 +19,38 @@
 */
 
 #include <iostream>
+#include <string_view>
+#include <vector>
 
 #include "updater/Updater.hpp"
 #include "core/engine/Engine.hpp"
+#include "core/version/AppVersion.hpp"
 #include "gui/renderer/Renderer.hpp"
 
 #include <external/exception.hpp>
 
-int main()
+int wmain(const int argc, wchar_t* argv[])
 {
     c_exception_handler::setup();
 
     LogHelper::Init();
 
-    LOGF(INFO, "Compiled {}, Welcome to cs2-external-esp-recode!", __TIMESTAMP__);
+    LOGF(INFO, "Pluto v{} compiled {} {}", app_version::current_text, __DATE__, __TIME__);
+
+    std::vector<std::wstring_view> arguments;
+    arguments.reserve(static_cast<std::size_t>(argc));
+    for (int index = 0; index < argc; ++index) {
+        arguments.emplace_back(argv[index]);
+    }
+    const auto startup_action = updater::Updater::ProcessStartup(arguments);
+    if (startup_action != updater::StartupAction::continue_launch) {
+        LogHelper::Destroy();
+        return startup_action == updater::StartupAction::exit_success ? 0 : 1;
+    }
 
     // Needs to be ran as ADMINISTRATOR
     if (!SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS))
         LOGF(WARNING, "Could not set application process priority to HIGH");
-
-    if (!Updater::Init() || !Updater::Process()) {
-        LOGF(FATAL, "Updater failed to run, the application has not verified its status, execution its not recommended");
-        LOGF(INFO, "Press any key to ignore and continue execution...");
-        std::cin.get();
-    }
 
     if (!Engine::Init()) {
         LOGF(FATAL, "Engine failed to initialize, cannot continue execution");

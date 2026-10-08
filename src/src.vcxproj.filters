@@ -51,6 +51,12 @@
     <ClCompile Include="gui\renderer\window\Window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="gui\theme\Theme.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\widgets\Widgets.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="external\imgui\imgui.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -96,13 +102,31 @@
     <ClCompile Include="gui\frontend\esp\Esp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="gui\frontend\esp\DrawPrimitives.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="config\Config.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="config\ConfigDocument.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="gui\frontend\overlays\Overlays.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="updater\Updater.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="updater\FileIntegrity.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="updater\ReleaseModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="updater\SelfReplace.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="updater\UpdatePaths.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="updater\http\HttpHelper.cpp">
@@ -159,6 +183,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gui\renderer\window\Window.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\theme\Theme.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\widgets\Widgets.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="external\imgui\imstb_truetype.h">
@@ -365,10 +395,16 @@
     <ClInclude Include="gui\frontend\esp\Esp.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="gui\frontend\esp\DrawPrimitives.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="core\engine\classes\Bones.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="config\Config.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="config\ConfigDocument.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="config\Current.hpp">
@@ -381,6 +417,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="updater\Updater.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="updater\FileIntegrity.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="updater\ReleaseModel.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="updater\SelfReplace.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="updater\UpdatePaths.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="updater\http\HttpHelper.hpp">

@@ -105,7 +105,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Crypt32.lib;Psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
     </Link>
@@ -123,11 +123,12 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>common.hpp</PrecompiledHeaderFile>
       <ForcedIncludeFiles>common.hpp</ForcedIncludeFiles>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Crypt32.lib;Psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
     </Link>
@@ -147,7 +148,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Crypt32.lib;Psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
     </Link>
@@ -165,11 +166,12 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>common.hpp</PrecompiledHeaderFile>
       <ForcedIncludeFiles>common.hpp</ForcedIncludeFiles>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Crypt32.lib;Psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
     </Link>
@@ -182,6 +184,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="config\Config.cpp" />
+    <ClCompile Include="config\ConfigDocument.cpp" />
     <ClCompile Include="core\engine\cache\Cache.cpp" />
     <ClCompile Include="core\engine\classes\Bomb.cpp" />
     <ClCompile Include="core\engine\classes\ObserverServices.cpp" />
@@ -192,6 +195,11 @@
     <ClCompile Include="core\logger\LogHelper.cpp" />
     <ClCompile Include="core\memory\Memory.cpp" />
     <ClCompile Include="core\offsets\Dumper.cpp" />
+    <ClCompile Include="core\version\SemanticVersion.cpp" />
+    <ClCompile Include="updater\FileIntegrity.cpp" />
+    <ClCompile Include="updater\ReleaseModel.cpp" />
+    <ClCompile Include="updater\SelfReplace.cpp" />
+    <ClCompile Include="updater\UpdatePaths.cpp" />
     <ClCompile Include="external\AsyncLogger\src\LogCapture.cpp" />
     <ClCompile Include="external\AsyncLogger\src\Logger.cpp" />
     <ClCompile Include="external\AsyncLogger\src\LogIntermediate.cpp" />
@@ -205,13 +213,31 @@
     <ClCompile Include="external\imgui\imgui_tables.cpp" />
     <ClCompile Include="external\imgui\imgui_widgets.cpp" />
     <ClCompile Include="external\timer\timer.cpp" />
+    <ClCompile Include="gui\frontend\esp\DrawPrimitives.cpp" />
     <ClCompile Include="gui\frontend\esp\Esp.cpp" />
     <ClCompile Include="assets\images\ImageLoader.cpp" />
+    <ClCompile Include="..\starline-imgui-menu-GOOD FOR CS 2\external_esp_menu.cpp" />
+    <ClCompile Include="..\starline-imgui-menu-GOOD FOR CS 2\imgui_text_renderer.cpp" />
+    <ClCompile Include="..\starline-imgui-menu-GOOD FOR CS 2\loader_framework.cpp" />
+    <ClCompile Include="..\starline-imgui-menu-GOOD FOR CS 2\local_account.cpp" />
+    <ClCompile Include="..\starline-imgui-menu-GOOD FOR CS 2\local_account_loader.cpp" />
+    <ClCompile Include="..\starline-imgui-menu-GOOD FOR CS 2\menu_framework.cpp" />
     <ClCompile Include="gui\frontend\menu\Menu.cpp" />
+    <ClCompile Include="gui\frontend\menu\MenuShell.cpp" />
+    <ClCompile Include="gui\frontend\menu\pages\VisualsPage.cpp" />
+    <ClCompile Include="gui\frontend\menu\pages\WorldPage.cpp" />
+    <ClCompile Include="gui\frontend\menu\pages\SystemPage.cpp" />
+    <ClCompile Include="gui\frontend\menu\pages\ConfigPage.cpp" />
+    <ClCompile Include="gui\frontend\preview\EspPreview.cpp" />
     <ClCompile Include="gui\frontend\menu\imgui_helper.cpp" />
+    <ClCompile Include="gui\frontend\menu\imgui_custom.cpp" />
     <ClCompile Include="gui\frontend\overlays\Overlays.cpp" />
+    <ClCompile Include="gui\frontend\overlays\OverlayPresentation.cpp" />
+    <ClCompile Include="gui\frontend\overlays\SystemTelemetry.cpp" />
     <ClCompile Include="gui\renderer\Renderer.cpp" />
     <ClCompile Include="gui\renderer\window\Window.cpp" />
+    <ClCompile Include="gui\theme\Theme.cpp" />
+    <ClCompile Include="gui\widgets\Widgets.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="updater\http\HttpHelper.cpp" />
     <ClCompile Include="updater\Updater.cpp" />
@@ -220,8 +246,15 @@
   <ItemGroup>
     <ClInclude Include="assets\fonts\Icons.h" />
     <ClInclude Include="assets\fonts\WeaponIcons.h" />
+    <ClInclude Include="..\starline-imgui-menu-GOOD FOR CS 2\external_esp_menu.h" />
+    <ClInclude Include="..\starline-imgui-menu-GOOD FOR CS 2\imgui_text_renderer.h" />
+    <ClInclude Include="..\starline-imgui-menu-GOOD FOR CS 2\loader_framework.h" />
+    <ClInclude Include="..\starline-imgui-menu-GOOD FOR CS 2\local_account.hpp" />
+    <ClInclude Include="..\starline-imgui-menu-GOOD FOR CS 2\local_account_loader.h" />
+    <ClInclude Include="..\starline-imgui-menu-GOOD FOR CS 2\menu_framework.h" />
     <ClInclude Include="common.hpp" />
     <ClInclude Include="config\Config.hpp" />
+    <ClInclude Include="config\ConfigDocument.hpp" />
     <ClInclude Include="config\Current.hpp" />
     <ClInclude Include="core\engine\cache\Cache.hpp" />
     <ClInclude Include="core\engine\classes\Bomb.hpp" />
@@ -305,11 +338,29 @@
     <ClInclude Include="external\json\include\nlohmann\thirdparty\hedley\hedley.hpp" />
     <ClInclude Include="external\json\include\nlohmann\thirdparty\hedley\hedley_undef.hpp" />
     <ClInclude Include="external\timer\timer.hpp" />
+    <ClInclude Include="gui\frontend\esp\DrawPrimitives.hpp" />
     <ClInclude Include="gui\frontend\esp\Esp.hpp" />
     <ClInclude Include="gui\frontend\menu\Menu.hpp" />
+    <ClInclude Include="gui\frontend\menu\MenuShell.hpp" />
+    <ClInclude Include="gui\frontend\menu\MenuContext.hpp" />
+    <ClInclude Include="gui\frontend\menu\pages\VisualsPage.hpp" />
+    <ClInclude Include="gui\frontend\menu\pages\WorldPage.hpp" />
+    <ClInclude Include="gui\frontend\menu\pages\SystemPage.hpp" />
+    <ClInclude Include="gui\frontend\menu\pages\ConfigPage.hpp" />
+    <ClInclude Include="gui\frontend\preview\EspPreview.hpp" />
     <ClInclude Include="gui\frontend\overlays\Overlays.hpp" />
+    <ClInclude Include="gui\frontend\overlays\OverlayPresentation.hpp" />
+    <ClInclude Include="gui\frontend\overlays\SystemTelemetry.hpp" />
+    <ClInclude Include="core\version\AppVersion.hpp" />
+    <ClInclude Include="core\version\SemanticVersion.hpp" />
+    <ClInclude Include="updater\FileIntegrity.hpp" />
+    <ClInclude Include="updater\ReleaseModel.hpp" />
+    <ClInclude Include="updater\SelfReplace.hpp" />
+    <ClInclude Include="updater\UpdatePaths.hpp" />
     <ClInclude Include="gui\renderer\Renderer.hpp" />
     <ClInclude Include="gui\renderer\window\Window.hpp" />
+    <ClInclude Include="gui\theme\Theme.hpp" />
+    <ClInclude Include="gui\widgets\Widgets.hpp" />
     <ClInclude Include="updater\http\HttpHelper.hpp" />
     <ClInclude Include="updater\Updater.hpp" />
     <ClInclude Include="core\engine\classes\Weapon.hpp" />

@@ -1,9 +1,11 @@
 #include "Overlays.hpp"
 
-#include "updater/Updater.hpp"
+#include "OverlayPresentation.hpp"
+
 #include "gui/renderer/Renderer.hpp" // Circular dependency
 #include "gui/frontend/menu/Menu.hpp" // Circular dependency
 #include "assets/fonts/WeaponIcons.h"
+#include "../../../../starline-imgui-menu-GOOD FOR CS 2/external_esp_menu.h"
 #include <Windows.h>
 #pragma comment(lib, "winmm.lib")
 
@@ -46,9 +48,7 @@ void Overlays::RenderImpl() {
         RenderNotice();
         RenderDefusingNotification();
 
-    #ifdef _DEBUG
         RenderDebugWindow();
-    #endif
 
     }
     ImGui::PopFont();
@@ -67,124 +67,15 @@ void Overlays::RenderWatermark() {
     if (!cfg::settings::watermark)
         return;
 
-    auto& io = ImGui::GetIO();
-    auto d = ImGui::GetBackgroundDrawList();
-
-    auto snapshot = Cache::CopySnapshot();
-    auto& globals = snapshot.globals;
-
-    static int margin = 10;
-    static int padding = 10;
-    std::string watermark_info = "";
-
-    watermark_info += std::format(" | {}fps", (int)io.Framerate);
-
-    if (globals.in_match)
-        watermark_info += std::format(" | {}", globals.map_name);
-
-    // Calculate total size
-    auto brand_tokyo = "Tokyo";
-    auto brand_z = "Z";
-    auto tokyo_size = ImGui::CalcTextSize(brand_tokyo);
-    auto z_size = ImGui::CalcTextSize(brand_z);
-    auto info_size = ImGui::CalcTextSize(watermark_info.data());
-    auto total_width = tokyo_size.x + z_size.x + info_size.x;
-    auto total_height = std::max(tokyo_size.y, std::max(z_size.y, info_size.y));
-
-    auto rect_start = ImVec2(io.DisplaySize.x - margin - padding * 2 - total_width, margin);
-    auto rect_end = ImVec2(io.DisplaySize.x - margin, margin + total_height + padding);
-    auto pos = ImVec2(rect_start.x + padding, rect_start.y + padding * 0.6/* compensate font */);
-
-    d->AddRectFilled(
-        rect_start,
-        rect_end,
-        IM_COL32(0, 0, 0, 200),
-        8.f
-    );
-
-    d->AddRect(
-        rect_start,
-        rect_end,
-        IM_COL32(100, 100, 100, 200),
-        8.f
-    );
-
-    // "Tokyo" in white
-    d->AddText(
-        pos,
-        IM_COL32(255, 255, 255, 255),
-        brand_tokyo
-    );
-
-    // "Z" in purple accent
-    d->AddText(
-        ImVec2(pos.x + tokyo_size.x, pos.y),
-        IM_COL32(123, 94, 167, 255), // #7B5EA7
-        brand_z
-    );
-
-    // Info in white
-    d->AddText(
-        ImVec2(pos.x + tokyo_size.x + z_size.x, pos.y),
-        IM_COL32(255, 255, 255, 255),
-        watermark_info.data()
-    );
+    const SystemTelemetrySnapshot live = telemetry.Sample();
+    Starline::GUI::RenderTokyoZKWatermark(
+        ImGui::GetIO().Framerate,
+        live.cpu_percent,
+        live.working_set_mib);
 }
 
 void Overlays::RenderNotice() {
-    static auto status = Updater::GetStatus();
-
-    if (status.notice.empty())
-        return;
-
-    if (!Renderer::IsOpen())
-        return;
-
-    auto& io = ImGui::GetIO();
-    auto d = ImGui::GetBackgroundDrawList();
-
-    static int margin = 10;
-    static int padding = 10;
-    auto menu_pos = Menu::GetPos();
-    auto menu_size = Menu::GetSize();
-
-    auto max_width = menu_size.x - padding * 2;
-    
-    auto size = ImGui::CalcTextSize(status.notice.data(), nullptr, false, max_width);
-
-    auto rect_start = ImVec2(menu_pos.x, menu_pos.y - margin - padding * 2 - size.y);
-    auto rect_end = ImVec2(menu_pos.x + menu_size.x, menu_pos.y - margin);
-    auto pos = ImVec2(rect_start.x + padding, rect_start.y + padding);
-
-    d->AddRectFilled(
-        rect_start,
-        rect_end,
-        IM_COL32(0, 0, 0, 200),
-        10.f
-    );
-
-    d->AddRect(
-        rect_start,
-        rect_end,
-        IM_COL32(100, 100, 100, 200),
-        10.f
-    );
-
-    d->AddText(
-        pos - ImVec2(0, padding + padding * 0.5),
-        IM_COL32(255, 200, 0, 255),
-        "Notice"
-    );
-
-    d->AddText(
-        this->font,
-        this->font->LegacySize,
-        pos,
-        IM_COL32(255, 255, 255, 255),
-        status.notice.data(),
-        nullptr, 
-        max_width
-    );
+    // Release metadata is no longer used as an in-overlay notice channel.
 }
 
 inline Player* FindPlayerByPawnIndex(std::vector<Player>& players, int index) {
@@ -200,7 +91,9 @@ inline Player* FindPlayerByPawnIndex(std::vector<Player>& players, int index) {
 }
 
 void Overlays::RenderSpectatorList() {
-    if (!cfg::world::spectators::enabled)
+    const auto visibility = overlay_presentation::ResolveVisibility(
+        { .spectators = cfg::world::spectators::enabled }, {});
+    if (!visibility.spectators)
         return;
 
     auto snapshot = Cache::CopySnapshot();
@@ -226,9 +119,6 @@ void Overlays::RenderSpectatorList() {
         }
     }
 
-    if (!should_render && !is_menu_open)
-        return;
-
     // Window
     ImGui::SetNextWindowPos(cfg::world::spectators::pos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSizeConstraints(ImVec2(150.f, 50.f), ImVec2(FLT_MAX, FLT_MAX));
@@ -241,7 +131,7 @@ void Overlays::RenderSpectatorList() {
     if (is_menu_open)
         cfg::world::spectators::pos = ImGui::GetWindowPos();
 
-    if (!should_render && is_menu_open) {
+    if (!should_render) {
         ImGui::TextDisabled("No spectators");
         return ImGui::End();
     }
@@ -297,7 +187,9 @@ void Overlays::RenderSpectatorList() {
 }
 
 void Overlays::RenderSpeedChart() {
-    if (!cfg::world::velocity::enabled)
+    const auto visibility = overlay_presentation::ResolveVisibility(
+        { .velocity = cfg::world::velocity::enabled }, {});
+    if (!visibility.velocity)
         return;
 
     auto& io = ImGui::GetIO();
@@ -326,9 +218,6 @@ void Overlays::RenderSpeedChart() {
     float width = right - left;
     float height = bottom - top;
 
-    if (!is_menu_open && !local.alive)
-        return;
-
     if (is_menu_open) {
         auto height_padding = 25; // some padding to keep the speed number inside the area
         auto altitude_padding = 10; // so it doesnt go under the titlebar
@@ -352,8 +241,8 @@ void Overlays::RenderSpeedChart() {
         vel_buffer.resize(static_cast<size_t>(rate * length));
     }
 
-    Vec2_t speed_2d(local.vel.x, local.vel.y);
-    int speed = floor(speed_2d.len());
+    const Vec2_t speed_2d(local.vel.x, local.vel.y);
+    const int speed = local.alive ? static_cast<int>(std::floor(speed_2d.len())) : 0;
 
     vel_accumulator += io.DeltaTime;
     size_t buff_size = vel_buffer.size();
@@ -406,7 +295,6 @@ void Overlays::RenderSpeedChart() {
         std::to_string(speed).c_str());
 }
 
-#ifdef _DEBUG
 void Overlays::RenderDebugWindow() {
     auto& io = ImGui::GetIO();
     auto d = ImGui::GetBackgroundDrawList();
@@ -463,10 +351,11 @@ void Overlays::RenderDebugWindow() {
         debug_string.data()
     );
 }
-#endif
 
 void Overlays::RenderRadar() {
-    if (!cfg::world::radar::enabled)
+    const auto visibility = overlay_presentation::ResolveVisibility(
+        { .radar = cfg::world::radar::enabled }, {});
+    if (!visibility.radar)
         return;
 
     auto snapshot = Cache::CopySnapshot();
@@ -475,9 +364,6 @@ void Overlays::RenderRadar() {
     auto& matrix = snapshot.game.view_matrix;
 
     const bool is_menu_open = Renderer::IsOpen();
-
-    if (!is_menu_open && !local.alive)
-        return;
 
     auto& pos = cfg::world::radar::pos;
     auto& size = cfg::world::radar::size;
@@ -522,6 +408,8 @@ void Overlays::RenderRadar() {
     d->AddLine(ImVec2(cx, pos.y + 4.f), ImVec2(cx, pos.y + size.y - 4.f), IM_COL32(50, 50, 50, 120));
 
     for (auto& player : players) {
+        if (!local.alive)
+            break;
         if (!player.alive)
             continue;
 
@@ -570,7 +458,13 @@ void Overlays::RenderRadar() {
 }
 
 void Overlays::RenderBomb() {
-    if (!cfg::world::bomb::location && !cfg::world::bomb::timer)
+    const auto visibility = overlay_presentation::ResolveVisibility(
+        {
+            .bomb_location = cfg::world::bomb::location,
+            .bomb_timer = cfg::world::bomb::timer,
+        },
+        {});
+    if (!visibility.bomb)
         return;
 
     auto& io = ImGui::GetIO();
@@ -591,21 +485,13 @@ void Overlays::RenderBomb() {
     float bar_height = 3.f;
     float element_gap = 6.f;
 
-    auto duration_str = std::format("{}s", bomb.is_planted ? bomb.time_left : 40.0f);
-    auto bombsite_str = std::string(!bomb.is_planted || bomb.site == BombSite::A ? "A" : "B");
-
-    std::string bomb_string = "";
-
-    if (cfg::world::bomb::location)
-        bomb_string += "SITE " + bombsite_str;
-
-    if (cfg::world::bomb::timer)
-    {
-        if (cfg::world::bomb::location)
-            bomb_string += " | ";
-
-        bomb_string += duration_str;
-    }
+    const auto presentation = overlay_presentation::BuildBombPresentation(
+        cfg::world::bomb::location,
+        cfg::world::bomb::timer,
+        bomb.is_planted,
+        bomb.site == BombSite::B ? 'B' : 'A',
+        bomb.time_left);
+    const std::string& bomb_string = presentation.text;
 
     auto text_size = ImGui::CalcTextSize(bomb_string.data());
 
@@ -617,7 +503,7 @@ void Overlays::RenderBomb() {
     float content_height = std::max(icon_size.y, text_size.y);
 
     width = content_width + (padding * 2);
-    height = content_height + (padding * 2) + (cfg::world::bomb::timer ? bar_height + 2.f : 0.f);
+    height = content_height + (padding * 2) + (presentation.show_progress ? bar_height + 2.f : 0.f);
 
     if (is_menu_open) {
         ImGui::SetNextWindowBgAlpha(0.0f);
@@ -636,19 +522,11 @@ void Overlays::RenderBomb() {
         ImGui::PopStyleVar();
     }
 
-    if (!bomb.is_planted && !is_menu_open)
-        return;
-
-    if (bomb.is_planted && !bomb.pos.length() && !is_menu_open)
-        return;
-
-    if (!local.alive && !is_menu_open)
-        return;
-
     Vec2_t screen_pos;
-    bool on_top = bomb.is_planted ? matrix.wts(bomb.pos, io.DisplaySize, screen_pos) : false;
+    const bool has_world_location = bomb.is_planted && local.alive && bomb.pos.length() > 0.0f;
+    bool on_top = has_world_location && matrix.wts(bomb.pos, io.DisplaySize, screen_pos);
 
-    auto dist = local.pos.dist_to(bomb.pos);
+    const float dist = has_world_location ? local.pos.dist_to(bomb.pos) : 0.0f;
 
     if (is_menu_open) on_top = false;
     if (dist > 1500.f) on_top = false;
@@ -696,10 +574,9 @@ void Overlays::RenderBomb() {
         bomb_string.data()
     );
 
-    if (cfg::world::bomb::timer)
+    if (presentation.show_progress)
     {
-        float time_left = bomb.is_planted ? bomb.time_left : 40.f;
-        float progress = std::clamp(time_left / 40.f, 0.f, 1.f);
+        const float progress = presentation.progress;
 
         ImU32 bar_color = progress > 0.5f
             ? IM_COL32((int)((1.f - progress) * 2.f * 255), 220, 50, 255)
