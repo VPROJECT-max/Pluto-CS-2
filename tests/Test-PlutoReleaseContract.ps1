@@ -32,7 +32,9 @@ Assert-Match $releaseWorkflow "tags:\s*- 'v\*\.\*\.\*'" 'Release workflow must t
 Assert-Match $releaseWorkflow 'gh release create' 'Release workflow must publish with GitHub CLI'
 Assert-Match $releaseWorkflow 'dist[/\\]Pluto-portable\.exe' 'Release workflow asset name mismatch'
 Assert-Match $releaseWorkflow 'contents:\s*write' 'Release workflow requires contents write permission'
+Assert-Match $releaseWorkflow 'function Invoke-Checked' 'Release workflow must fail immediately when any verification process fails'
 Assert-Match $mainWorkflow 'branches:\s*- main' 'Main workflow must build the main branch'
+Assert-Match $mainWorkflow 'function Invoke-Checked' 'Main workflow must fail immediately when any verification process fails'
 if ($mainWorkflow -match 'gh release create|action-gh-release') {
     throw 'Main workflow must not publish a release'
 }
