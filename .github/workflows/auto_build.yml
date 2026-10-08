@@ -1,40 +1,77 @@
-name: Build Project
+name: Verify Pluto
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      # - cs2-recode
-      # - auto-build # testing
     paths:
       - '**/*.sln'
+      - '**/*.vcxproj'
       - '**/*.cpp'
       - '**/*.hpp'
-      - '**/*.c'
       - '**/*.h'
+      - '**/*.rc'
+      - '**/*.ps1'
+      - '.github/workflows/*.yml'
+
+permissions:
+  contents: read
 
 jobs:
-  build:
+  verify:
     runs-on: windows-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-        fetch-depth: 0
-    - name: Set up MSBuild
-      uses: microsoft/setup-msbuild@v1
+      - name: Checkout source and dependencies
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-    - name: Build solution
-      env:
-        VCPKG_ROOT: ${{ env.VCPKG_ROOT }}
-      run: msbuild cs2-external-esp.sln /p:Configuration=Release
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-artifacts
-        path: |
-          x64/Release/*
+      - name: Build test executables
+        shell: pwsh
+        run: |
+          $projects = @(
+            'tests/UpdaterModelTests.vcxproj',
+            'tests/UpdaterIoTests.vcxproj',
+            'tests/SelfReplaceTests.vcxproj',
+            'tests/PlutoBrandTests.vcxproj',
+            'tests/OverlayPresentationTests.vcxproj',
+            'tests/LocalAccountTests.vcxproj',
+            'tests/ConfigDocumentTests.vcxproj',
+            'tests/GeometryTests.vcxproj'
+          )
+          foreach ($project in $projects) {
+            msbuild $project /t:Rebuild /p:Configuration=Debug /p:Platform=x64 /m:1 /nologo /v:minimal
+            if ($LASTEXITCODE -ne 0) { throw "Test build failed: $project" }
+          }
+
+      - name: Run verification suites
+        shell: pwsh
+        run: |
+          & 'tests/UpdaterModelTests.exe'
+          & 'tests/SelfReplaceTests.exe'
+          & 'tests/PlutoBrandTests.exe'
+          & 'tests/OverlayPresentationTests.exe'
+          & 'tests/LocalAccountTests.exe'
+          & 'tests/ConfigDocumentTests.exe'
+          & 'tests/GeometryTests.exe'
+          powershell -NoProfile -ExecutionPolicy Bypass -File 'tests/http_fixture.ps1' -Executable 'tests/UpdaterIoTests.exe'
+          powershell -NoProfile -ExecutionPolicy Bypass -File 'tests/Test-SyncOffsets.ps1'
+          powershell -NoProfile -ExecutionPolicy Bypass -File 'tests/Test-StarlineIntegration.ps1'
+          powershell -NoProfile -ExecutionPolicy Bypass -File 'tests/Test-UiContracts.ps1'
+          powershell -NoProfile -ExecutionPolicy Bypass -File 'tests/Test-PlutoReleaseContract.ps1'
+          if ($LASTEXITCODE -ne 0) { throw 'A verification suite failed' }
+
+      - name: Build verified one-file portable
+        shell: pwsh
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File 'tools/BuildPortable.ps1'
+
+      - name: Upload portable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pluto-portable
+          path: dist/Pluto-portable.exe
+          if-no-files-found: error

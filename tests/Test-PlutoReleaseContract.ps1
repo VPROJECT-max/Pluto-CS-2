@@ -1,0 +1,42 @@
+param()
+
+$ErrorActionPreference = 'Stop'
+$repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+
+function Assert-Match {
+    param([string]$Text, [string]$Pattern, [string]$Message)
+    if ($Text -notmatch $Pattern) { throw $Message }
+}
+
+function Assert-Equal {
+    param([string]$Actual, [string]$Expected, [string]$Message)
+    if ($Actual -cne $Expected) { throw "$Message (expected '$Expected', got '$Actual')" }
+}
+
+$versionHeader = Get-Content -Raw (Join-Path $repo 'src\core\version\AppVersion.hpp')
+$updater = Get-Content -Raw (Join-Path $repo 'src\updater\Updater.cpp')
+$builder = Get-Content -Raw (Join-Path $repo 'tools\BuildPortable.ps1')
+$releaseWorkflow = Get-Content -Raw (Join-Path $repo '.github\workflows\release.yml')
+$mainWorkflow = Get-Content -Raw (Join-Path $repo '.github\workflows\auto_build.yml')
+$project = Get-Content -Raw (Join-Path $repo 'src\src.vcxproj')
+
+$versionMatch = [regex]::Match($versionHeader, 'current_text\s*\{\s*"(?<version>\d+\.\d+\.\d+)"\s*\}')
+if (-not $versionMatch.Success) { throw 'Unable to parse AppVersion current_text' }
+Assert-Equal $versionMatch.Groups['version'].Value '2.5.0' 'Pluto product version mismatch'
+
+$endpointMatch = [regex]::Match($updater, 'https://api\.github\.com/repos/VPROJECT-max/Pluto-CS-2/releases/latest')
+if (-not $endpointMatch.Success) { throw 'Updater latest-release endpoint mismatch' }
+
+Assert-Match $builder "Join-Path \`$OutputDirectory 'Pluto-portable\.exe'" 'Portable builder output name mismatch'
+Assert-Match $releaseWorkflow "tags:\s*- 'v\*\.\*\.\*'" 'Release workflow must trigger on stable SemVer tags'
+Assert-Match $releaseWorkflow 'gh release create' 'Release workflow must publish with GitHub CLI'
+Assert-Match $releaseWorkflow 'dist[/\\]Pluto-portable\.exe' 'Release workflow asset name mismatch'
+Assert-Match $releaseWorkflow 'contents:\s*write' 'Release workflow requires contents write permission'
+Assert-Match $mainWorkflow 'branches:\s*- main' 'Main workflow must build the main branch'
+if ($mainWorkflow -match 'gh release create|action-gh-release') {
+    throw 'Main workflow must not publish a release'
+}
+Assert-Match $project '<UACExecutionLevel>RequireAdministrator</UACExecutionLevel>' 'Project must require administrator privileges'
+Assert-Match $project '<ResourceCompile Include="Pluto\.rc"' 'Project must compile Pluto resources'
+
+Write-Output 'Pluto release contract passed'
