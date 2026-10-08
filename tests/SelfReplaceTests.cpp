@@ -92,7 +92,10 @@ int main() {
     const auto paths = updater::BuildUpdatePaths(original, local, "2.5.1", error);
     assert(paths);
     assert(error.empty());
-    assert(paths->staged_executable.parent_path() == local / "Pluto" / "Updates" / "2.5.1");
+    assert(paths->staged_executable.parent_path() == paths->version_directory);
+    assert(paths->version_directory.parent_path() == paths->updates_root);
+    assert(updater::IsPathContainedBy(
+        paths->staged_executable, local / "Pluto" / "Updates"));
 
     updater::ApplyRequest valid{
         paths->staged_executable, paths->original_executable, paths->rollback_executable,
