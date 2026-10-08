@@ -87,14 +87,14 @@ jobs:
             Invoke-Checked $executable
           }
 
-          Invoke-Checked 'powershell' @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'tests/http_fixture.ps1', '-Executable', 'tests/UpdaterIoTests.exe')
+          Invoke-Checked 'pwsh' @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'tests/http_fixture.ps1', '-Executable', 'tests/UpdaterIoTests.exe')
           foreach ($script in @('tests/Test-SyncOffsets.ps1', 'tests/Test-StarlineIntegration.ps1', 'tests/Test-UiContracts.ps1', 'tests/Test-PlutoReleaseContract.ps1')) {
-            Invoke-Checked 'powershell' @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $script)
+            Invoke-Checked 'pwsh' @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $script)
           }
 
       - name: Build verified one-file portable
         shell: pwsh
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File 'tools/BuildPortable.ps1'
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File 'tools/BuildPortable.ps1'
 
       - name: Publish GitHub Release
         shell: pwsh
