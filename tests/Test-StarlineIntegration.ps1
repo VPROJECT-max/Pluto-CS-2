@@ -27,6 +27,12 @@ foreach ($name in @('external_esp_menu.cpp', 'external_esp_menu.h', 'local_accou
     }
 }
 
+$stbPath = 'starline-imgui-menu-GOOD FOR CS 2/stb_image.h'
+& git -C $repo ls-files --error-unmatch -- $stbPath *> $null
+if ($LASTEXITCODE -ne 0) {
+    throw 'stb_image.h must be tracked so clean Release builds can compile ImageLoader.cpp'
+}
+
 $project = Get-Content -Raw -LiteralPath (Join-Path $repo 'src/src.vcxproj')
 foreach ($name in @('external_esp_menu.cpp', 'local_account_loader.cpp', 'local_account.cpp', 'menu_framework.cpp', 'loader_framework.cpp', 'imgui_text_renderer.cpp')) {
     if ($project -notmatch [regex]::Escape($name)) { throw "Main project does not compile Starline module: $name" }
