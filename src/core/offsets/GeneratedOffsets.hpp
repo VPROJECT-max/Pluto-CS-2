@@ -3,17 +3,17 @@
 #include <cstdint>
 
 namespace generated_offsets {
-inline constexpr const char* source_timestamp = "2026-10-07T09:12:42.307173600+00:00";
-inline constexpr const char* offsets_sha256 = "E95C7C4DD637DE9FD0081A337D9C1898885F36CAC1B8D92A692B83348D014098";
-inline constexpr const char* client_dll_sha256 = "0E7E8DC1D6A68B750247844F4947083A9A0343BAAAAFB4D67D89C9B20F0754FC";
-inline constexpr std::uint32_t source_build_number = 14189;
+inline constexpr const char* source_timestamp = "2026-10-09T10:16:56.246663700+00:00";
+inline constexpr const char* offsets_sha256 = "D8F824A6007381D3C484914BA6450E226A17483E5F2C83880115F2F4C059F2B6";
+inline constexpr const char* client_dll_sha256 = "8916976681B167A052160289FC37DE99CED6BEEF3FBF2F63B02F0F251E33C4C7";
+inline constexpr std::uint32_t source_build_number = 14190;
 
-inline constexpr std::uint32_t viewMatrix = 0x2567FA0;
-inline constexpr std::uint32_t globalVars = 0x222DE98;
-inline constexpr std::uint32_t entityList = 0x2717828;
-inline constexpr std::uint32_t localPlayerController = 0x253A068;
-inline constexpr std::uint32_t plantedC4 = 0x24CA930;
-inline constexpr std::uint32_t weaponC4 = 0x24C6AF0;
+inline constexpr std::uint32_t viewMatrix = 0x2561CD0;
+inline constexpr std::uint32_t globalVars = 0x2228090;
+inline constexpr std::uint32_t entityList = 0x2711598;
+inline constexpr std::uint32_t localPlayerController = 0x25338A8;
+inline constexpr std::uint32_t plantedC4 = 0x24C2248;
+inline constexpr std::uint32_t weaponC4 = 0x24C0800;
 inline constexpr std::uint32_t buildNumber = 0x61CFE8;
 inline constexpr std::uint32_t m_iPing = 0x838;
 inline constexpr std::uint32_t m_hPawn = 0x6BC;
@@ -33,7 +33,7 @@ inline constexpr std::uint32_t m_pGameSceneNode = 0x330;
 inline constexpr std::uint32_t m_entitySpottedState = 0x1E88;
 inline constexpr std::uint32_t m_bSpottedByMask = 0xC;
 inline constexpr std::uint32_t m_flFlashOverlayAlpha = 0x1504;
-inline constexpr std::uint32_t m_angEyeAngles = 0x35F0;
+inline constexpr std::uint32_t m_angEyeAngles = 0x3600;
 inline constexpr std::uint32_t m_pWeaponServices = 0x12F0;
 inline constexpr std::uint32_t m_hActiveWeapon = 0x60;
 inline constexpr std::uint32_t m_AttributeManager = 0x1290;
