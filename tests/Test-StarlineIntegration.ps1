@@ -3,12 +3,21 @@ $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
 $working = Join-Path $repo 'starline-imgui-menu-GOOD FOR CS 2'
 
+function Get-NormalizedSourceHash([string]$Path) {
+    $text = [IO.File]::ReadAllText($Path)
+    $normalized = $text.Replace("`r`n", "`n").Replace("`r", "`n")
+    $bytes = [Text.UTF8Encoding]::new($false).GetBytes($normalized)
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { return ([BitConverter]::ToString($sha.ComputeHash($bytes))).Replace('-', '') }
+    finally { $sha.Dispose() }
+}
+
 $primitiveHashes = @{
-    'menu_framework.cpp' = '465A78D409F6844A805215D07DBB98A623C33966EAD610C6828C4467F5DB6A15'
-    'loader_framework.cpp' = 'D549C014AC63BDFEC13716BA76384F46F631B8DA8ED82254EBE5ECF743E8278A'
+    'menu_framework.cpp' = '042CF46C76DA1DFB41EA5BB94C911B5266301399EC290C87A49D109E8981017E'
+    'loader_framework.cpp' = '90789998108D80C7D8B1E47CECA788815B219A7FCEF16C5ABF775BE8A6C590AE'
 }
 foreach ($name in $primitiveHashes.Keys) {
-    $workingHash = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $working $name)).Hash
+    $workingHash = Get-NormalizedSourceHash (Join-Path $working $name)
     if ($primitiveHashes[$name] -cne $workingHash) { throw "Reference UI primitive source changed: $name" }
 }
 
