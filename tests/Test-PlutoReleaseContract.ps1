@@ -17,6 +17,7 @@ $versionHeader = Get-Content -Raw (Join-Path $repo 'src\core\version\AppVersion.
 $updater = Get-Content -Raw (Join-Path $repo 'src\updater\Updater.cpp')
 $builder = Get-Content -Raw (Join-Path $repo 'tools\BuildPortable.ps1')
 $portableVerifier = Get-Content -Raw (Join-Path $repo 'tests\Test-PortableBuild.ps1')
+$httpFixture = Get-Content -Raw (Join-Path $repo 'tests\http_fixture.ps1')
 $releaseWorkflow = Get-Content -Raw (Join-Path $repo '.github\workflows\release.yml')
 $mainWorkflow = Get-Content -Raw (Join-Path $repo '.github\workflows\auto_build.yml')
 $project = Get-Content -Raw (Join-Path $repo 'src\src.vcxproj')
@@ -34,6 +35,8 @@ Assert-Match $portableVerifier 'vswhere\.exe' 'Portable verification must discov
 if ($portableVerifier -match 'Microsoft Visual Studio\\2022') {
     throw 'Portable verification must not hard-code the Visual Studio 2022 install root'
 }
+Assert-Match $httpFixture 'Get-Process\s+-Id\s+\$PID' 'HTTP fixture must launch its server with the active PowerShell runtime'
+Assert-Match $httpFixture 'AddSeconds\(30\)' 'HTTP fixture must tolerate hosted-runner process startup latency'
 Assert-Match $releaseWorkflow "tags:\s*- 'v\*\.\*\.\*'" 'Release workflow must trigger on stable SemVer tags'
 Assert-Match $releaseWorkflow 'gh release create' 'Release workflow must publish with GitHub CLI'
 Assert-Match $releaseWorkflow 'dist[/\\]Pluto-portable\.exe' 'Release workflow asset name mismatch'

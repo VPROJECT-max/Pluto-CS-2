@@ -78,12 +78,14 @@ $probe.Start()
 $selectedPort = ([Net.IPEndPoint]$probe.LocalEndpoint).Port
 $probe.Stop()
 $ready = Join-Path ([IO.Path]::GetTempPath()) "pluto-http-fixture-$PID.ready"
-$serverProcess = Start-Process powershell -WindowStyle Hidden -PassThru -ArgumentList @(
+$powershellPath = (Get-Process -Id $PID).Path
+if (-not $powershellPath) { throw 'Unable to locate the active PowerShell executable' }
+$serverProcess = Start-Process -FilePath $powershellPath -WindowStyle Hidden -PassThru -ArgumentList @(
     '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath,
     '-Server', '-Port', $selectedPort, '-ReadyFile', $ready
 )
 try {
-    $deadline = [DateTime]::UtcNow.AddSeconds(10)
+    $deadline = [DateTime]::UtcNow.AddSeconds(30)
     while (-not (Test-Path -LiteralPath $ready)) {
         if ($serverProcess.HasExited) { throw "HTTP fixture exited with $($serverProcess.ExitCode)" }
         if ([DateTime]::UtcNow -ge $deadline) { throw 'HTTP fixture did not become ready' }
