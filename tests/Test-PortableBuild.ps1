@@ -10,13 +10,38 @@ if ([IO.Path]::GetFileName($Executable) -cne 'Pluto-portable.exe') {
     throw 'Portable executable must be named exactly Pluto-portable.exe'
 }
 
-$dumpbin = Get-ChildItem 'C:\Program Files\Microsoft Visual Studio\2022' -Filter dumpbin.exe -Recurse -ErrorAction SilentlyContinue |
-    Where-Object { $_.FullName -match '\\Hostx64\\x64\\dumpbin\.exe$' } |
-    Sort-Object FullName -Descending |
-    Select-Object -First 1 -ExpandProperty FullName
+$dumpbin = $null
+$command = Get-Command dumpbin.exe -ErrorAction SilentlyContinue
+if ($command) { $dumpbin = $command.Source }
+
 if (-not $dumpbin) {
-    $command = Get-Command dumpbin.exe -ErrorAction SilentlyContinue
-    if ($command) { $dumpbin = $command.Source }
+    $vswhereCandidates = @(
+        (Get-Command vswhere.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -First 1),
+        'C:\ProgramData\Chocolatey\bin\vswhere.exe',
+        'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe'
+    ) | Where-Object { $_ -and (Test-Path -LiteralPath $_ -PathType Leaf) } | Select-Object -Unique
+
+    foreach ($vswhere in $vswhereCandidates) {
+        $installationPath = & $vswhere -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath -latest |
+            Select-Object -First 1
+        if (-not $installationPath) { continue }
+
+        $dumpbin = Get-ChildItem (Join-Path $installationPath 'VC\Tools\MSVC') -Filter dumpbin.exe -File -Recurse -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -match '\\Hostx64\\x64\\dumpbin\.exe$' } |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1 -ExpandProperty FullName
+        if ($dumpbin) { break }
+    }
+}
+
+if (-not $dumpbin) {
+    $visualStudioRoot = 'C:\Program Files\Microsoft Visual Studio'
+    if (Test-Path -LiteralPath $visualStudioRoot -PathType Container) {
+        $dumpbin = Get-ChildItem $visualStudioRoot -Filter dumpbin.exe -File -Recurse -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -match '\\Hostx64\\x64\\dumpbin\.exe$' } |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1 -ExpandProperty FullName
+    }
 }
 if (-not $dumpbin) { throw 'dumpbin.exe was not found; cannot verify the portable executable' }
 
