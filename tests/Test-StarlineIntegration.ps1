@@ -32,6 +32,10 @@ $stbPath = 'starline-imgui-menu-GOOD FOR CS 2/stb_image.h'
 if ($LASTEXITCODE -ne 0) {
     throw 'stb_image.h must be tracked so clean Release builds can compile ImageLoader.cpp'
 }
+$imageLoader = Get-Content -Raw -LiteralPath (Join-Path $repo 'src/assets/images/ImageLoader.cpp')
+if ($imageLoader -notmatch '#include\s+"\.\./\.\./\.\./starline-imgui-menu-GOOD FOR CS 2/stb_image\.h"') {
+    throw 'ImageLoader.cpp must include the tracked stb_image.h by an explicit path'
+}
 
 $project = Get-Content -Raw -LiteralPath (Join-Path $repo 'src/src.vcxproj')
 foreach ($name in @('external_esp_menu.cpp', 'local_account_loader.cpp', 'local_account.cpp', 'menu_framework.cpp', 'loader_framework.cpp', 'imgui_text_renderer.cpp')) {

@@ -1,6 +1,6 @@
 #include "ImageLoader.hpp"
 #define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+#include "../../../starline-imgui-menu-GOOD FOR CS 2/stb_image.h"
 
 bool ImageLoader::LoadTextureFromMemory(ID3D11Device* device, const unsigned char* image_data, int image_data_len, ID3D11ShaderResourceView** out_srv, int* out_width, int* out_height) {
     // Load from memory into a raw RGBA buffer
